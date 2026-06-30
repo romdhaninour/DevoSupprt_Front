@@ -1,0 +1,141 @@
+
+  <div class="w-full max-w-lg mx-auto">
+    <!-- Glassmorphism Card -->
+    <div class="relative backdrop-blur-xl bg-white/70 dark:bg-gray-800/70 rounded-3xl shadow-2xl border border-white/20 dark:border-gray-700/50 overflow-hidden">
+      <!-- Decorative gradient border -->
+      <div class="absolute inset-0 bg-gradient-to-r from-blue-500/20 via-purple-500/20 to-pink-500/20 opacity-50"></div>
+
+      <div class="relative p-6 sm:p-7">
+        <!-- Logo and Branding -->
+        <div class="flex flex-col items-center mb-5">
+          <div class="flex items-center gap-2 mb-2">
+            <img
+              src="/images/logo/DevoLgo.png"
+              alt="DevoSupport"
+              class="w-10 h-10 rounded-xl shadow-lg"
+            />
+            <span class="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">DevoSupport</span>
+          </div>
+          <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-1">Welcome Back</h1>
+          <p class="text-sm text-gray-600 dark:text-gray-400 text-center">Sign in to access your dashboard</p>
+        </div>
+
+        @if (message) {
+          <div class="mb-4 p-4 bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-300 rounded-xl dark:from-amber-900/30 dark:to-orange-900/30 dark:border-amber-600 shadow-lg">
+            <div class="flex items-start gap-3">
+              <div class="flex-shrink-0 p-1.5 bg-amber-100 rounded-full dark:bg-amber-800">
+                <svg class="w-5 h-5 text-amber-600 dark:text-amber-400" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                </svg>
+              </div>
+              <div class="flex-1">
+                <h3 class="font-semibold text-amber-900 dark:text-amber-200 mb-0.5 text-sm">Account Verification Required</h3>
+                <p class="text-xs text-amber-800 dark:text-amber-300 leading-relaxed">{{ message }}</p>
+              </div>
+            </div>
+          </div>
+        }
+
+        <!-- Google Login Button -->
+        <button (click)="signInWithGoogle()" class="group relative w-full flex items-center justify-center gap-3 py-3 text-sm font-semibold text-gray-700 transition-all duration-300 bg-white border-2 border-gray-200 rounded-xl hover:border-blue-500 hover:shadow-xl hover:shadow-blue-500/30 hover:-translate-y-0.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:hover:border-blue-400 dark:hover:shadow-blue-400/30 mb-4">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M18.7511 10.1944C18.7511 9.47495 18.6915 8.94995 18.5626 8.40552H10.1797V11.6527H15.1003C15.0011 12.4597 14.4654 13.675 13.2749 14.4916L13.2582 14.6003L15.9087 16.6126L16.0924 16.6305C17.7788 15.1041 18.7511 12.8583 18.7511 10.1944Z" fill="#4285F4"/>
+            <path d="M10.1788 18.75C12.5895 18.75 14.6133 17.9722 16.0915 16.6305L13.274 14.4916C12.5201 15.0068 11.5081 15.3666 10.1788 15.3666C7.81773 15.3666 5.81379 13.8402 5.09944 11.7305L4.99473 11.7392L2.23868 13.8295L2.20264 13.9277C3.67087 16.786 6.68674 18.75 10.1788 18.75Z" fill="#34A853"/>
+            <path d="M5.10014 11.7305C4.91165 11.186 4.80257 10.6027 4.80257 9.99992C4.80257 9.3971 4.91165 8.81379 5.09022 8.26935L5.08523 8.1534L2.29464 6.02954L2.20333 6.0721C1.5982 7.25823 1.25098 8.5902 1.25098 9.99992C1.25098 11.4096 1.5982 12.7415 2.20333 13.9277L5.10014 11.7305Z" fill="#FBBC05"/>
+            <path d="M10.1789 4.63331C11.8554 4.63331 12.9864 5.34303 13.6312 5.93612L16.1511 3.525C14.6035 2.11528 12.5895 1.25 10.1789 1.25C6.68676 1.25 3.67088 3.21387 2.20264 6.07218L5.08953 8.26943C5.81381 6.15972 7.81776 4.63331 10.1789 4.63331Z" fill="#EB4335"/>
+          </svg>
+          <span>Continue with Google</span>
+        </button>
+
+        <!-- Divider -->
+        <div class="relative py-4">
+          <div class="absolute inset-0 flex items-center">
+            <div class="w-full border-t border-gray-200 dark:border-gray-600"></div>
+          </div>
+          <div class="relative flex justify-center">
+            <span class="px-3 text-xs text-gray-500 bg-white dark:bg-gray-800">or continue with email</span>
+          </div>
+        </div>
+
+        <!-- Form -->
+        <form (ngSubmit)="onSignIn()" class="space-y-4">
+          <div>
+            <label class="block mb-1.5 text-xs font-semibold text-gray-700 dark:text-gray-300">Email Address</label>
+            <div class="relative">
+              <input
+                type="email"
+                placeholder="Enter your email"
+                [value]="email"
+                name="email"
+                class="w-full px-3.5 py-2.5 pl-10 text-sm text-gray-900 bg-gray-50 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:bg-white dark:bg-gray-700/50 dark:border-gray-600 dark:text-white dark:placeholder-gray-400 dark:focus:bg-gray-700 transition-all duration-200"
+                required
+              />
+              <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207"/>
+              </svg>
+            </div>
+          </div>
+
+          <div>
+            <label class="block mb-1.5 text-xs font-semibold text-gray-700 dark:text-gray-300">Password</label>
+            <div class="relative">
+              <input
+                [type]="showPassword ? 'text' : 'password'"
+                placeholder="Enter your password"
+                [value]="password"
+                name="password"
+                class="w-full px-3.5 py-2.5 pl-10 pr-10 text-sm text-gray-900 bg-gray-50 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:bg-white dark:bg-gray-700/50 dark:border-gray-600 dark:text-white dark:placeholder-gray-400 dark:focus:bg-gray-700 transition-all duration-200"
+                required
+              />
+              <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+              </svg>
+              <button
+                type="button"
+                (click)="togglePasswordVisibility()"
+                class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 transition-colors hover:text-gray-600 dark:hover:text-gray-300"
+              >
+                @if (showPassword) {
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                </svg>
+                } @else {
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/>
+                </svg>
+                }
+              </button>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between">
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" [(ngModel)]="isChecked" name="rememberMe" class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:focus:ring-blue-500" />
+              <span class="text-xs text-gray-600 dark:text-gray-400">Remember me</span>
+            </label>
+            <a routerLink="/reset-password" class="text-xs font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 transition-colors">
+              Forgot password?
+            </a>
+          </div>
+
+          <button
+            type="submit"
+            class="w-full py-3 text-sm font-semibold text-white transition-all duration-300 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl hover:from-blue-700 hover:to-purple-700 hover:shadow-xl hover:shadow-blue-500/30 hover:-translate-y-0.5 focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-800"
+          >
+            Sign In
+          </button>
+        </form>
+
+        <div class="mt-5 text-center">
+          <p class="text-xs text-gray-600 dark:text-gray-400">
+            Don't have an account?
+            <a routerLink="/signup" class="ml-1 font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 transition-colors">
+              Sign up now
+            </a>
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
