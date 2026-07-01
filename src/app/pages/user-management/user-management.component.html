@@ -1,126 +1,420 @@
-<div class="p-6">
-  <div class="mb-6">
-    <h1 class="text-2xl font-bold text-gray-900 dark:text-white">User Management</h1>
-    <p class="text-gray-600 dark:text-gray-400">Manage active users in the system</p>
+<app-page-breadcrumb pageTitle="Utilisateurs" />
+
+<div class="space-y-6">
+  <!-- Header -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-1">Gestion des Utilisateurs</h1>
+      <p class="text-gray-600 dark:text-gray-400 text-sm">Gérer et surveiller tous les utilisateurs de votre système</p>
+    </div>
   </div>
 
-  <div *ngIf="loading()" class="flex justify-center items-center h-64">
-    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+  <!-- Stats Cards -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Total Utilisateurs</p>
+          <p class="text-3xl font-bold text-gray-900 dark:text-white">{{ users().length }}</p>
+        </div>
+        <div class="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center">
+          <svg class="w-6 h-6 text-blue-600 dark:text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+            <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
+          </svg>
+        </div>
+      </div>
+    </div>
+    <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Utilisateurs Actifs</p>
+          <p class="text-3xl font-bold text-green-600 dark:text-green-400">{{ users().filter(u => u.status === 'active').length }}</p>
+        </div>
+        <div class="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-xl flex items-center justify-center">
+          <svg class="w-6 h-6 text-green-600 dark:text-green-400" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" clip-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" />
+          </svg>
+        </div>
+      </div>
+    </div>
+    <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Utilisateurs Inactifs</p>
+          <p class="text-3xl font-bold text-yellow-600 dark:text-yellow-400">{{ users().filter(u => u.status === 'inactive').length }}</p>
+        </div>
+        <div class="w-12 h-12 bg-yellow-100 dark:bg-yellow-900/30 rounded-xl flex items-center justify-center">
+          <svg class="w-6 h-6 text-yellow-600 dark:text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" clip-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" />
+          </svg>
+        </div>
+      </div>
+    </div>
   </div>
 
-  <div *ngIf="error()" class="bg-red-50 border border-red-200 text-red-700 dark:bg-red-900/20 dark:border-red-800 dark:text-red-400 px-4 py-3 rounded mb-4">
-    {{ error() }}
+  <!-- Search Bar -->
+  <div class="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700 mb-6">
+    <div class="flex flex-col sm:flex-row gap-4">
+      <div class="relative flex-1">
+        <span class="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none">
+          <svg class="w-5 h-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" clip-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" />
+          </svg>
+        </span>
+        <input
+          type="text"
+          [ngModel]="searchTerm()"
+          (ngModelChange)="updateSearchTerm($event)"
+          placeholder="Rechercher des utilisateurs par nom ou email..."
+          class="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 bg-gray-50 text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder:text-gray-400"
+        />
+        <span *ngIf="searchTerm()" class="absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer" (click)="updateSearchTerm('')">
+          <svg class="w-5 h-5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" clip-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 01-1.414-1.414z" />
+          </svg>
+        </span>
+      </div>
+      <div class="relative min-w-[150px]">
+        <select
+          [ngModel]="roleFilter()"
+          (ngModelChange)="updateRoleFilter($event)"
+          class="w-full pl-4 pr-12 py-3 rounded-xl border border-gray-200 bg-gray-50 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white appearance-none cursor-pointer"
+        >
+          <option value="all">Tous les rôles</option>
+          <option value="ADMIN">Admin</option>
+          <option value="CONSULTANT">Consultant</option>
+          <option value="IT">IT</option>
+        </select>
+        <span class="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
+          <svg class="w-5 h-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" clip-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" />
+          </svg>
+        </span>
+      </div>
+      <div class="relative min-w-[150px]">
+        <select
+          [ngModel]="statusFilter()"
+          (ngModelChange)="updateStatusFilter($event)"
+          class="w-full pl-4 pr-12 py-3 rounded-xl border border-gray-200 bg-gray-50 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white appearance-none cursor-pointer"
+        >
+          <option value="all">Tous les statuts</option>
+          <option value="active">Actif</option>
+          <option value="inactive">Inactif</option>
+        </select>
+        <span class="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
+          <svg class="w-5 h-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" clip-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" />
+          </svg>
+        </span>
+      </div>
+      <a routerLink="/archived-users"
+         class="inline-flex items-center gap-2 px-4 py-3 text-sm font-medium text-gray-700 bg-gray-100 rounded-xl hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600 transition-all duration-200 border border-gray-200 dark:border-gray-600 whitespace-nowrap">
+        <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" clip-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" />
+        </svg>
+        Utilisateurs Archivés
+      </a>
+    </div>
   </div>
 
-  <div *ngIf="!loading() && !error()" class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
-    <!-- Desktop Table View -->
-    <div class="hidden lg:block overflow-x-auto">
-      <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-        <thead class="bg-gray-50 dark:bg-gray-900">
-          <tr>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Name</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Email</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Role</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
-          </tr>
-        </thead>
-        <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-          <tr *ngFor="let user of users()">
-            <td class="px-6 py-4 whitespace-nowrap">
-              <div class="text-sm font-medium text-gray-900 dark:text-white">{{ user.prenom }} {{ user.nom }}</div>
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap">
-              <div class="text-sm text-gray-500 dark:text-gray-400">{{ user.email }}</div>
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap">
-              <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
-                {{ user.role }}
-              </span>
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap">
-              <span [class]="'px-2 inline-flex text-xs leading-5 font-semibold rounded-full ' + getStatusClass(user.status)">
-                {{ user.status }}
-              </span>
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-              <button *ngIf="user.status === 'inactive'" (click)="activateUser(user._id)"
-                      class="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300">Activate</button>
-              <button *ngIf="user.status === 'active'" (click)="deactivateUser(user._id)"
-                      class="text-yellow-600 hover:text-yellow-900 dark:text-yellow-400 dark:hover:text-yellow-300">Deactivate</button>
-              <button (click)="openArchiveModal(user)"
-                      class="text-orange-600 hover:text-orange-900 dark:text-orange-400 dark:hover:text-orange-300">Archive</button>
-              <button (click)="openDeleteModal(user)"
-                      class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300">Delete</button>
-              <button (click)="openEditModal(user)"
-                      class="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300">Edit</button>
-            </td>
-          </tr>
-          <tr *ngIf="users().length === 0">
-            <td colspan="5" class="px-6 py-4 text-center text-gray-500 dark:text-gray-400">No users found</td>
-          </tr>
-        </tbody>
-      </table>
+  <!-- Users Table -->
+  <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+    <div *ngIf="loading()" class="flex justify-center items-center h-64">
+      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
     </div>
 
-    <!-- Mobile Card View -->
-    <div class="lg:hidden space-y-4 p-4">
-      <div *ngFor="let user of users()" class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-        <div class="mb-3">
-          <div class="flex items-start justify-between mb-2">
-            <h3 class="text-sm font-semibold text-gray-900 dark:text-white">{{ user.prenom }} {{ user.nom }}</h3>
-            <span [class]="'px-2 py-1 inline-flex text-xs leading-4 font-semibold rounded-full flex-shrink-0 ' + getStatusClass(user.status)">
-              {{ user.status }}
-            </span>
-          </div>
-          <p class="text-xs text-gray-500 dark:text-gray-400 break-all">{{ user.email }}</p>
-        </div>
-        <div class="flex items-center gap-2 mb-3">
-          <span class="px-2 py-1 inline-flex text-xs leading-4 font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
-            {{ user.role }}
-          </span>
-        </div>
-        <div class="flex flex-wrap gap-2">
-          <button *ngIf="user.status === 'inactive'" (click)="activateUser(user._id)"
-                  class="px-3 py-1.5 text-xs font-medium text-green-600 bg-green-50 rounded-lg hover:bg-green-100 dark:bg-green-900/30 dark:text-green-400 dark:hover:bg-green-900/50">
-            Activate
+    <div *ngIf="error()" class="bg-red-50 border border-red-200 text-red-700 dark:bg-red-900/20 dark:border-red-800 dark:text-red-400 px-4 py-3 rounded m-4">
+      {{ error() }}
+    </div>
+
+    <div *ngIf="!loading() && !error()" class="overflow-hidden">
+      <!-- Desktop Table View -->
+      <div class="hidden lg:block overflow-x-auto">
+        <table class="min-w-full">
+          <thead class="bg-gray-50 dark:bg-gray-900/50">
+            <tr>
+              <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Utilisateur</th>
+              <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Email</th>
+              <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Rôle</th>
+              <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Statut</th>
+              <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
+            </tr>
+          </thead>
+          <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-100 dark:divide-gray-700">
+            <tr *ngFor="let user of paginatedUsers; let i = index" class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="flex items-center gap-3">
+                  <div class="w-12 h-12 overflow-hidden rounded-full profile-image-container ring-2 ring-gray-100 dark:ring-gray-700">
+                    <img
+                      *ngIf="user.profilePicture && user.profilePicture !== ''"
+                      [src]="user.profilePicture"
+                      [alt]="user.prenom + ' ' + user.nom"
+                      class="w-full h-full object-cover"
+                      (error)="onImageError($event)"
+                      (load)="onImageLoad($event)"
+                    />
+                    <div
+                      class="w-full h-full rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-semibold text-sm fallback-avatar"
+                      [style.display]="'flex'"
+                    >
+                      {{ user.prenom[0] }}{{ user.nom[0] }}
+                    </div>
+                  </div>
+                  <div>
+                    <div class="text-sm font-semibold text-gray-900 dark:text-white">{{ user.prenom }} {{ user.nom }}</div>
+                  </div>
+                </div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm text-gray-600 dark:text-gray-400">{{ user.email }}</div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <span [class]="'px-3 py-1.5 inline-flex text-xs font-semibold rounded-full border ' + getRoleBadgeColor(user.role)">
+                  {{ getRoleDisplayName(user.role) }}
+                </span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <span [class]="'px-3 py-1.5 inline-flex text-xs font-semibold rounded-full border ' + getStatusClass(user.status)">
+                  {{ user.status }}
+                </span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                <div class="relative inline-flex items-center gap-2 action-menu-container">
+                  <button type="button" (click)="toggleActionMenu(user._id, $event)"
+                          class="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-gray-200 text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white transition-all duration-200">
+                    <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                      <circle cx="3" cy="10" r="2" />
+                      <circle cx="10" cy="10" r="2" />
+                      <circle cx="17" cy="10" r="2" />
+                    </svg>
+                  </button>
+
+                  <div *ngIf="openActionMenuId() === user._id" class="fixed z-50 flex min-w-[180px] flex-col gap-1 rounded-xl border border-gray-200 bg-white p-2 shadow-xl dark:border-gray-700 dark:bg-gray-800 backdrop-blur-sm" [style.top.px]="actionMenuPosition()?.top" [style.left.px]="actionMenuPosition()?.left" style="max-height: calc(100vh - 40px); overflow-y: auto;">
+                    <button *ngIf="user.status === 'inactive'" (click)="openActivateModal(user)"
+                            class="w-full rounded-lg px-3 py-2 text-left text-xs font-medium text-gray-600 hover:bg-green-50 hover:text-green-600 dark:text-gray-400 dark:hover:bg-green-900/30 dark:hover:text-green-400 transition-all duration-200">
+                      Activer
+                    </button>
+                    <button *ngIf="user.status === 'active'" (click)="openDeactivateModal(user)"
+                            class="w-full rounded-lg px-3 py-2 text-left text-xs font-medium text-gray-600 hover:bg-yellow-50 hover:text-yellow-600 dark:text-gray-400 dark:hover:bg-yellow-900/30 dark:hover:text-yellow-400 transition-all duration-200">
+                      Désactiver
+                    </button>
+                    <button (click)="openArchiveModal(user)"
+                            class="w-full rounded-lg px-3 py-2 text-left text-xs font-medium text-gray-600 hover:bg-orange-50 hover:text-orange-600 dark:text-gray-400 dark:hover:bg-orange-900/30 dark:hover:text-orange-400 transition-all duration-200">
+                      Archiver
+                    </button>
+                    <button (click)="openEditModal(user)"
+                            class="w-full rounded-lg px-3 py-2 text-left text-xs font-medium text-gray-600 hover:bg-blue-50 hover:text-blue-600 dark:text-gray-400 dark:hover:bg-blue-900/30 dark:hover:text-blue-400 transition-all duration-200">
+                      Modifier
+                    </button>
+                    <button (click)="openDeleteModal(user)"
+                            class="w-full rounded-lg px-3 py-2 text-left text-xs font-medium text-gray-600 hover:bg-red-50 hover:text-red-600 dark:text-gray-400 dark:hover:bg-red-900/30 dark:hover:text-red-400 transition-all duration-200">
+                      Supprimer
+                    </button>
+                  </div>
+                </div>
+              </td>
+            </tr>
+            <tr *ngIf="paginatedUsers.length === 0">
+              <td colspan="5" class="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
+                <div class="flex flex-col items-center">
+                  <svg class="w-16 h-16 text-gray-300 dark:text-gray-600 mb-4" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
+                  </svg>
+                  <p class="text-lg font-medium">{{ searchTerm() ? 'No users found' : 'No users found' }}</p>
+                  <p class="text-sm">{{ searchTerm() ? 'Try adjusting your search' : 'Get started by adding your first user' }}</p>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination Controls -->
+      <div *ngIf="filteredUsers().length > 0" class="px-6 py-4 border-t border-gray-100 dark:border-gray-700">
+        <div class="flex items-center justify-end gap-2 w-full">
+          <!-- Previous Button -->
+          <button
+            (click)="goToPage(currentPage - 1)"
+            [disabled]="currentPage === 1"
+            class="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700"
+          >
+            <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" clip-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" />
+            </svg>
+            <span class="hidden sm:inline">Précédent</span>
           </button>
-          <button *ngIf="user.status === 'active'" (click)="deactivateUser(user._id)"
-                  class="px-3 py-1.5 text-xs font-medium text-yellow-600 bg-yellow-50 rounded-lg hover:bg-yellow-100 dark:bg-yellow-900/30 dark:text-yellow-400 dark:hover:bg-yellow-900/50">
-            Deactivate
-          </button>
-          <button (click)="openArchiveModal(user)"
-                  class="px-3 py-1.5 text-xs font-medium text-orange-600 bg-orange-50 rounded-lg hover:bg-orange-100 dark:bg-orange-900/30 dark:text-orange-400 dark:hover:bg-orange-900/50">
-            Archive
-          </button>
-          <button (click)="openDeleteModal(user)"
-                  class="px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 rounded-lg hover:bg-red-100 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50">
-            Delete
-          </button>
-          <button (click)="openEditModal(user)"
-                  class="px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50">
-            Edit
+
+          <!-- Page Numbers (Desktop) -->
+          <ul class="hidden items-center gap-1 sm:flex">
+            @for (page of [].constructor(totalPages); track $index; let idx = $index) {
+            <li>
+              <button
+                (click)="goToPage(idx + 1)"
+                class="flex h-9 w-9 items-center justify-center rounded-lg text-sm font-medium transition-colors"
+                [ngClass]="{
+                  'bg-blue-600 text-white': currentPage === idx + 1,
+                  'text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700': currentPage !== idx + 1
+                }"
+              >
+                {{ idx + 1 }}
+              </button>
+            </li>
+            }
+          </ul>
+
+          <!-- Next Button -->
+          <button
+            (click)="goToPage(currentPage + 1)"
+            [disabled]="currentPage === totalPages"
+            class="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700"
+          >
+            <span class="hidden sm:inline">Suivant</span>
+            <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" clip-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" />
+            </svg>
           </button>
         </div>
       </div>
-      <div *ngIf="users().length === 0" class="text-center text-gray-500 dark:text-gray-400 py-8">
-        No users found
+    </div>
+    <div>
+      <!-- Mobile Card View -->
+      <div class="lg:hidden space-y-4 p-4">
+        <div *ngFor="let user of paginatedUsers" class="bg-gray-50 dark:bg-gray-700/50 rounded-2xl p-5 border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow duration-200">
+          <div class="mb-4">
+            <div class="flex items-start justify-between mb-3">
+              <div class="flex items-center gap-3">
+                <div class="w-12 h-12 overflow-hidden rounded-full profile-image-container ring-2 ring-gray-100 dark:ring-gray-700">
+                  <img
+                    *ngIf="user.profilePicture && user.profilePicture !== ''"
+                    [src]="user.profilePicture"
+                    [alt]="user.prenom + ' ' + user.nom"
+                    class="w-full h-full object-cover"
+                    (error)="onImageError($event)"
+                    (load)="onImageLoad($event)"
+                  />
+                  <div
+                    class="w-full h-full rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-semibold text-sm fallback-avatar"
+                    [style.display]="'flex'"
+                  >
+                    {{ user.prenom[0] }}{{ user.nom[0] }}
+                  </div>
+                </div>
+                <h3 class="text-base font-semibold text-gray-900 dark:text-white">{{ user.prenom }} {{ user.nom }}</h3>
+              </div>
+              <span [class]="'px-3 py-1.5 inline-flex text-xs font-semibold rounded-full border flex-shrink-0 ' + getStatusClass(user.status)">
+                {{ user.status }}
+              </span>
+            </div>
+            <p class="text-sm text-gray-600 dark:text-gray-400 break-all mb-3">{{ user.email }}</p>
+          </div>
+          <div class="flex items-center gap-2 mb-4">
+            <span [class]="'px-3 py-1.5 inline-flex text-xs font-semibold rounded-full border ' + getRoleBadgeColor(user.role)">
+              {{ getRoleDisplayName(user.role) }}
+            </span>
+          </div>
+          <div class="flex flex-wrap gap-2 action-menu-container">
+            <button type="button" (click)="toggleActionMenu(user._id, $event)"
+                    class="inline-flex items-center rounded-xl border border-gray-200 px-4 py-2.5 text-xs font-medium text-gray-600 hover:bg-gray-100 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700 transition-all duration-200">
+              <svg class="h-4 w-4 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                <circle cx="3" cy="10" r="2" />
+                <circle cx="10" cy="10" r="2" />
+                <circle cx="17" cy="10" r="2" />
+              </svg>
+              Actions
+            </button>
+            <div *ngIf="openActionMenuId() === user._id" class="flex min-w-[180px] flex-col gap-1 rounded-xl border border-gray-200 bg-white p-2 shadow-xl dark:border-gray-700 dark:bg-gray-800 backdrop-blur-sm">
+              <button *ngIf="user.status === 'inactive'" (click)="openActivateModal(user)"
+                      class="w-full rounded-lg px-3 py-2 text-left text-xs font-medium text-gray-600 hover:bg-green-50 hover:text-green-600 dark:text-gray-400 dark:hover:bg-green-900/30 dark:hover:text-green-400 transition-all duration-200">
+                Activer
+              </button>
+              <button *ngIf="user.status === 'active'" (click)="openDeactivateModal(user)"
+                      class="w-full rounded-lg px-3 py-2 text-left text-xs font-medium text-gray-600 hover:bg-yellow-50 hover:text-yellow-600 dark:text-gray-400 dark:hover:bg-yellow-900/30 dark:hover:text-yellow-400 transition-all duration-200">
+                Désactiver
+              </button>
+              <button (click)="openArchiveModal(user)"
+                      class="w-full rounded-lg px-3 py-2 text-left text-xs font-medium text-gray-600 hover:bg-orange-50 hover:text-orange-600 dark:text-gray-400 dark:hover:bg-orange-900/30 dark:hover:text-orange-400 transition-all duration-200">
+                Archiver
+              </button>
+              <button (click)="openEditModal(user)"
+                      class="w-full rounded-lg px-3 py-2 text-left text-xs font-medium text-gray-600 hover:bg-blue-50 hover:text-blue-600 dark:text-gray-400 dark:hover:bg-blue-900/30 dark:hover:text-blue-400 transition-all duration-200">
+                Modifier
+              </button>
+              <button (click)="openDeleteModal(user)"
+                      class="w-full rounded-lg px-3 py-2 text-left text-xs font-medium text-gray-600 hover:bg-red-50 hover:text-red-600 dark:text-gray-400 dark:hover:bg-red-900/30 dark:hover:text-red-400 transition-all duration-200">
+                Supprimer
+              </button>
+            </div>
+          </div>
+        </div>
+        <div *ngIf="paginatedUsers.length === 0" class="text-center text-gray-500 dark:text-gray-400 py-12">
+          <div class="flex flex-col items-center">
+            <svg class="w-16 h-16 text-gray-300 dark:text-gray-600 mb-4" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
+            </svg>
+            <p class="text-lg font-medium">{{ searchTerm() ? 'Aucun utilisateur trouvé' : 'Aucun utilisateur trouvé' }}</p>
+            <p class="text-sm">{{ searchTerm() ? 'Essayez d\'ajuster votre recherche' : 'Commencez par ajouter votre premier utilisateur' }}</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mobile Pagination Controls -->
+      <div *ngIf="filteredUsers().length > 0" class="lg:hidden px-4 py-4 border-t border-gray-100 dark:border-gray-700">
+        <div class="flex items-center justify-end gap-2">
+          <button
+            (click)="goToPage(currentPage - 1)"
+            [disabled]="currentPage === 1"
+            class="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700"
+          >
+            <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" clip-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" />
+            </svg>
+            Précédent
+          </button>
+          
+          <span class="text-sm font-medium text-gray-700 dark:text-gray-400">
+            Page {{ currentPage }} sur {{ totalPages }}
+          </span>
+          
+          <button
+            (click)="goToPage(currentPage + 1)"
+            [disabled]="currentPage === totalPages"
+            class="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700"
+          >
+            Suivant
+            <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" clip-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" />
+            </svg>
+          </button>
+        </div>
       </div>
     </div>
   </div>
 
   <!-- Archive Warning Modal -->
   <app-modal [isOpen]="archiveWarningModalOpen()" (close)="closeModals()" className="max-w-sm mx-4">
-    <div class="p-5">
-      <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-3">Cannot Archive Active User</h3>
-      <p class="text-gray-600 dark:text-gray-400 mb-5 text-sm">
-        The account <strong>{{ selectedUser()?.prenom }} {{ selectedUser()?.nom }}</strong> is currently active.
-        You must deactivate the account before archiving it.
-      </p>
-      <div class="flex justify-end gap-2">
+    <div class="p-6">
+      <div class="flex items-start gap-4 mb-4">
+        <span class="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-orange-100 text-orange-700 dark:bg-orange-900/20 dark:text-orange-300">
+          <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 9v4" />
+            <path d="M12 17h.01" />
+            <path d="M10.29 3.86l-7.03 12.17a2 2 0 001.72 3h14.04a2 2 0 001.72-3L13.71 3.86a2 2 0 00-3.42 0z" />
+          </svg>
+        </span>
+        <div>
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Impossible d'archiver cet utilisateur</h3>
+          <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">
+            Le compte de <strong>{{ selectedUser()?.prenom }} {{ selectedUser()?.nom }}</strong> est actuellement actif.
+          </p>
+        </div>
+      </div>
+      <div class="rounded-2xl border border-orange-200 bg-orange-50 p-4 text-sm text-orange-700 dark:border-orange-900/40 dark:bg-orange-950/40 dark:text-orange-200 mb-5">
+        Vous devez d'abord désactiver le compte avant de pouvoir l'archiver.
+      </div>
+      <div class="flex justify-end">
         <button (click)="closeModals()"
-                class="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">
-          OK
+                class="inline-flex items-center justify-center rounded-lg bg-orange-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-500 dark:focus:ring-orange-400">
+          Fermer
         </button>
       </div>
     </div>
@@ -129,18 +423,18 @@
   <!-- Archive Confirmation Modal -->
   <app-modal [isOpen]="archiveModalOpen()" (close)="closeModals()" className="max-w-sm mx-4">
     <div class="p-5">
-      <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-3">Archive User</h3>
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-3">Archiver l'Utilisateur</h3>
       <p class="text-gray-600 dark:text-gray-400 mb-5 text-sm">
-        Are you sure you want to archive <strong>{{ selectedUser()?.prenom }} {{ selectedUser()?.nom }}</strong>?
+        Êtes-vous sûr de vouloir archiver <strong>{{ selectedUser()?.prenom }} {{ selectedUser()?.nom }}</strong> ?
       </p>
       <div class="flex justify-end gap-2">
         <button (click)="closeModals()"
                 class="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">
-          Cancel
+          Annuler
         </button>
         <button (click)="confirmArchive()"
                 class="px-3 py-1.5 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors text-sm">
-          Archive
+          Archiver
         </button>
       </div>
     </div>
@@ -149,19 +443,59 @@
   <!-- Delete Confirmation Modal -->
   <app-modal [isOpen]="deleteModalOpen()" (close)="closeModals()" className="max-w-sm mx-4">
     <div class="p-5">
-      <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-3">Delete User</h3>
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-3">Supprimer l'Utilisateur</h3>
       <p class="text-gray-600 dark:text-gray-400 mb-5 text-sm">
-        Are you sure you want to permanently delete <strong>{{ selectedUser()?.prenom }} {{ selectedUser()?.nom }}</strong>?
-        This action cannot be undone.
+        Êtes-vous sûr de vouloir supprimer définitivement <strong>{{ selectedUser()?.prenom }} {{ selectedUser()?.nom }}</strong> ?
+        Cette action ne peut pas être annulée.
       </p>
       <div class="flex justify-end gap-2">
         <button (click)="closeModals()"
                 class="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">
-          Cancel
+          Annuler
         </button>
         <button (click)="confirmDelete()"
                 class="px-3 py-1.5 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm">
-          Delete
+          Supprimer
+        </button>
+      </div>
+    </div>
+  </app-modal>
+
+  <!-- Activate Confirmation Modal -->
+  <app-modal [isOpen]="activationModalOpen()" (close)="closeModals()" className="max-w-sm mx-4">
+    <div class="p-5">
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-3">Activer l'Utilisateur</h3>
+      <p class="text-gray-600 dark:text-gray-400 mb-5 text-sm">
+        Voulez-vous activer <strong>{{ selectedUser()?.prenom }} {{ selectedUser()?.nom }}</strong> ?
+      </p>
+      <div class="flex justify-end gap-2">
+        <button (click)="closeModals()"
+                class="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">
+          Annuler
+        </button>
+        <button (click)="confirmActivate()"
+                class="px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm">
+          Activer
+        </button>
+      </div>
+    </div>
+  </app-modal>
+
+  <!-- Deactivate Confirmation Modal -->
+  <app-modal [isOpen]="deactivationModalOpen()" (close)="closeModals()" className="max-w-sm mx-4">
+    <div class="p-5">
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-3">Désactiver l'Utilisateur</h3>
+      <p class="text-gray-600 dark:text-gray-400 mb-5 text-sm">
+        Voulez-vous désactiver <strong>{{ selectedUser()?.prenom }} {{ selectedUser()?.nom }}</strong> ?
+      </p>
+      <div class="flex justify-end gap-2">
+        <button (click)="closeModals()"
+                class="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">
+          Annuler
+        </button>
+        <button (click)="confirmDeactivate()"
+                class="px-3 py-1.5 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors text-sm">
+          Désactiver
         </button>
       </div>
     </div>
@@ -170,12 +504,12 @@
   <!-- Edit Role Modal -->
   <app-modal [isOpen]="editModalOpen()" (close)="closeModals()" className="max-w-sm mx-4">
     <div class="p-5">
-      <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-3">Edit User Role</h3>
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-3">Modifier le Rôle de l'Utilisateur</h3>
       <p class="text-gray-600 dark:text-gray-400 mb-5 text-sm">
-        Change role for <strong>{{ selectedUser()?.prenom }} {{ selectedUser()?.nom }}</strong>
+        Changer le rôle de <strong>{{ selectedUser()?.prenom }} {{ selectedUser()?.nom }}</strong>
       </p>
       <div class="mb-5">
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Role</label>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Rôle</label>
         <select [ngModel]="selectedRole()" (ngModelChange)="selectedRole.set($event)" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
           <option value="IT">IT</option>
           <option value="ADMIN">ADMIN</option>
@@ -185,11 +519,11 @@
       <div class="flex justify-end gap-2">
         <button (click)="closeModals()"
                 class="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">
-          Cancel
+          Annuler
         </button>
         <button (click)="confirmEdit()"
                 class="px-3 py-1.5 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm">
-          Save
+          Enregistrer
         </button>
       </div>
     </div>

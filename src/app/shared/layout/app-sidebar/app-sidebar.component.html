@@ -34,7 +34,7 @@
         <span class="text-xl font-bold text-gray-900 dark:text-white">DevoSupport</span>
       </div>
       } @else {
-      <img src="/images/logo/logo-icon.svg" alt="Logo" width="32" height="32" />
+      <img src="/images/logo/DevoLgo.png" alt="Logo" width="32" height="32" />
       }
     </a>
   </div>
@@ -54,7 +54,7 @@
             }"
           >
             @if ((isExpanded$ | async) || (isHovered$ | async) || (isMobileOpen$ | async)) 
-            { Menu } 
+            { Menu Principal } 
            @else {
             <svg
               width="1em"
@@ -80,8 +80,8 @@
                 <button
                   (click)="toggleSubmenu('main',i)"
                   class="menu-item group cursor-pointer"
-                  [class.menu-item-active]="openSubmenu === 'main-' + i"
-                  [class.menu-item-inactive]="openSubmenu !== 'main-' + i"
+                  [class.menu-item-active]="isSubmenuActive(i)"
+                  [class.menu-item-inactive]="!isSubmenuActive(i)"
                   [ngClass]="{
                     'xl:justify-center': !(
                       (isExpanded$ | async) || (isHovered$ | async)
@@ -92,8 +92,8 @@
                 >
                   <span
                     class="menu-item-icon-size"
-                    [class.menu-item-icon-active]="openSubmenu === 'main-' + i"
-                    [class.menu-item-icon-inactive]="openSubmenu !== 'main-' + i"
+                    [class.menu-item-icon-active]="isSubmenuActive(i)"
+                    [class.menu-item-icon-inactive]="!isSubmenuActive(i)"
                     [innerHTML]="nav.icon | safeHtml"
                   >
                   </span>
@@ -109,8 +109,8 @@
                   <span
                     class="ml-auto absolute right-10 menu-dropdown-badge"
                     [ngClass]="{
-                      'menu-dropdown-badge-active': openSubmenu === 'main-' + i,
-                      'menu-dropdown-badge-inactive': openSubmenu !== 'main-' + i
+                      'menu-dropdown-badge-active': isSubmenuActive(i),
+                      'menu-dropdown-badge-inactive': !isSubmenuActive(i)
                     }"
                   >
                     new
@@ -120,7 +120,7 @@
                   (isMobileOpen$ | async)) {
                   <svg
                     [ngClass]="{
-                      'rotate-180 text-brand-500': openSubmenu === 'main-' + i
+                      'rotate-180 text-brand-500': isSubmenuActive(i)
                     }"
                     width="1em"
                     height="1em"

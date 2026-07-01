@@ -1,1 +1,17 @@
 /* User Management Component Styles */
+
+.profile-image-container {
+  position: relative;
+}
+
+.profile-image-container .fallback-avatar {
+  display: none;
+}
+
+.profile-image-container.img-error .fallback-avatar {
+  display: flex;
+}
+
+.profile-image-container.img-error img {
+  display: none;
+}

@@ -6,6 +6,7 @@ export interface User {
   role: 'ADMIN' | 'IT' | 'CONSULTANT';
   status: 'active' | 'inactive' | 'archived';
   isConsultant: boolean;
+  profilePicture?: string;
   createdAt?: string;
   updatedAt?: string;
 }
