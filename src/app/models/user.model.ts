@@ -7,6 +7,8 @@ export interface User {
   status: 'active' | 'inactive' | 'archived';
   isConsultant: boolean;
   profilePicture?: string;
+  phone?: string;
+  bio?: string;
   createdAt?: string;
   updatedAt?: string;
 }

@@ -24,13 +24,11 @@ export class AuthCallbackComponent implements OnInit {
       const nom = params['nom'];
       const prenom = params['prenom'];
       const email = params['email'];
-      
-      console.log('Auth callback params:', { token, status, role, profilePicture, nom, prenom, email });
+      const userId = params['userId'];
 
       if (token) {
         // Check user status and role
         if (status === 'inactive' && role !== 'ADMIN') {
-          console.log('Redirecting to sign-in: inactive non-admin user');
           // Add notification for admin about new user signup
           this.notificationService.addNotification(
             `New user ${prenom} ${nom} (${email}) signed up and needs activation`,
@@ -41,7 +39,6 @@ export class AuthCallbackComponent implements OnInit {
             queryParams: { message: 'account_inactive' }
           });
         } else {
-          console.log('Redirecting to dashboard: active user or admin');
           // Active users or admins: store token and redirect to dashboard
           localStorage.setItem('auth_token', token);
           localStorage.setItem('user_role', role);
@@ -50,11 +47,11 @@ export class AuthCallbackComponent implements OnInit {
           localStorage.setItem('user_nom', nom || '');
           localStorage.setItem('user_prenom', prenom || '');
           localStorage.setItem('user_email', email || '');
+          localStorage.setItem('user_id', userId || '');
           this.router.navigate(['/']);
         }
       } else {
         // Handle error - no token received
-        console.error('No token received from OAuth callback');
         this.router.navigate(['/signin']);
       }
     });

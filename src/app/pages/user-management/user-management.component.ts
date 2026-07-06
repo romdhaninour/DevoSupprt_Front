@@ -5,12 +5,12 @@ import { RouterModule } from '@angular/router';
 import { ApiService } from '../../services/api.service';
 import { User } from '../../models/user.model';
 import { ModalComponent } from '../../shared/components/ui/modal/modal.component';
-import { PageBreadcrumbComponent } from '../../shared/components/common/page-breadcrumb/page-breadcrumb.component';
+import { firstValueFrom } from 'rxjs';
 
 @Component({
   selector: 'app-user-management',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, ModalComponent, PageBreadcrumbComponent],
+  imports: [CommonModule, FormsModule, RouterModule, ModalComponent],
   templateUrl: './user-management.component.html',
   styleUrl: './user-management.component.css'
 })
@@ -49,6 +49,9 @@ export class UserManagementComponent implements OnInit {
   searchTerm = signal('');
   roleFilter = signal<string>('all');
   statusFilter = signal<string>('all');
+  importingUsers = signal(false);
+  importFeedback = signal<string | null>(null);
+  importFeedbackType = signal<'success' | 'error' | null>(null);
   
   // Pagination
   currentPage = 1;
@@ -57,7 +60,13 @@ export class UserManagementComponent implements OnInit {
   get totalPages(): number {
     return Math.ceil(this.filteredUsers().length / this.itemsPerPage);
   }
-  
+
+  getPaginatedRange(): string {
+    const start = (this.currentPage - 1) * this.itemsPerPage + 1;
+    const end = Math.min(this.currentPage * this.itemsPerPage, this.filteredUsers().length);
+    return `${start} à ${end} sur ${this.filteredUsers().length}`;
+  }
+
   get paginatedUsers(): User[] {
     const start = (this.currentPage - 1) * this.itemsPerPage;
     return this.filteredUsers().slice(start, start + this.itemsPerPage);
@@ -85,6 +94,74 @@ export class UserManagementComponent implements OnInit {
   updateStatusFilter(status: string) {
     this.statusFilter.set(status);
     this.currentPage = 1;
+  }
+
+  isAdmin(): boolean {
+    return localStorage.getItem('user_role') === 'ADMIN';
+  }
+
+  getRoleBadgeColors(role: string) {
+    const normalizedRole = (role || '').toUpperCase();
+    switch (normalizedRole) {
+      case 'ADMIN':
+        return {
+          bg: 'bg-red-50 dark:bg-red-950/30',
+          text: 'text-red-700 dark:text-red-400',
+          border: 'border-red-200 dark:border-red-800',
+          ring: 'ring-red-500'
+        };
+      case 'IT':
+        return {
+          bg: 'bg-blue-50 dark:bg-blue-950/30',
+          text: 'text-blue-700 dark:text-blue-400',
+          border: 'border-blue-200 dark:border-blue-800',
+          ring: 'ring-blue-500'
+        };
+      case 'CONSULTANT':
+        return {
+          bg: 'bg-purple-50 dark:bg-purple-950/30',
+          text: 'text-purple-700 dark:text-purple-400',
+          border: 'border-purple-200 dark:border-purple-800',
+          ring: 'ring-purple-500'
+        };
+      default:
+        return {
+          bg: 'bg-gray-50 dark:bg-gray-800',
+          text: 'text-gray-700 dark:text-gray-300',
+          border: 'border-gray-200 dark:border-gray-700',
+          ring: 'ring-gray-500'
+        };
+    }
+  }
+
+  getStatusBadgeColors(status: string) {
+    const normalizedStatus = (status || '').toLowerCase();
+    switch (normalizedStatus) {
+      case 'active':
+        return {
+          bg: 'bg-emerald-50 dark:bg-emerald-950/30',
+          text: 'text-emerald-700 dark:text-emerald-400',
+          border: 'border-emerald-200 dark:border-emerald-800'
+        };
+      case 'inactive':
+        return {
+          bg: 'bg-amber-50 dark:bg-amber-950/30',
+          text: 'text-amber-700 dark:text-amber-400',
+          border: 'border-amber-200 dark:border-amber-800'
+        };
+      case 'archived':
+        return {
+          bg: 'bg-gray-50 dark:bg-gray-800',
+          text: 'text-gray-700 dark:text-gray-300',
+          border: 'border-gray-200 dark:border-gray-700'
+        };
+      default:
+        return {
+          bg: 'bg-gray-50 dark:bg-gray-800',
+          text: 'text-gray-700 dark:text-gray-300',
+          border: 'border-gray-200 dark:border-gray-700'
+        };
+    }
   }
   
   getRoleDisplayName(role: string): string {
@@ -118,11 +195,16 @@ export class UserManagementComponent implements OnInit {
   activationModalOpen = signal(false);
   deactivationModalOpen = signal(false);
   editModalOpen = signal(false);
-  archiveWarningModalOpen = signal(false);
+  addUserModalOpen = signal(false);
   selectedUser = signal<User | null>(null);
   selectedRole = signal<string>('');
   openActionMenuId = signal<string | null>(null);
   actionMenuPosition = signal<{ top: number; left: number } | null>(null);
+  newUserNom = '';
+  newUserPrenom = '';
+  newUserEmail = '';
+  newUserRole: 'ADMIN' | 'IT' | 'CONSULTANT' = 'IT';
+  newUserError = signal<string | null>(null);
 
   constructor(private apiService: ApiService) {}
 
@@ -200,13 +282,63 @@ export class UserManagementComponent implements OnInit {
   openArchiveModal(user: User) {
     this.selectedUser.set(user);
     this.openActionMenuId.set(null);
-    // Check if user is active - if so, show warning modal
-    if (user.status === 'active') {
-      this.archiveWarningModalOpen.set(true);
-    } else {
-      // User is inactive, can proceed to archive
-      this.archiveModalOpen.set(true);
+    this.archiveModalOpen.set(true);
+  }
+
+  resetNewUserForm() {
+    this.newUserNom = '';
+    this.newUserPrenom = '';
+    this.newUserEmail = '';
+    this.newUserRole = 'IT';
+    this.newUserError.set(null);
+  }
+
+  openAddUserModal() {
+    this.resetNewUserForm();
+    this.addUserModalOpen.set(true);
+    this.openActionMenuId.set(null);
+  }
+
+  confirmAddUser() {
+    const email = this.newUserEmail.trim();
+    if (!this.newUserNom.trim() || !this.newUserPrenom.trim() || !email) {
+      this.newUserError.set('Veuillez remplir tous les champs obligatoires.');
+      return;
     }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      this.newUserError.set('Veuillez saisir une adresse email valide.');
+      return;
+    }
+
+    const token = localStorage.getItem('auth_token');
+    if (!token) {
+      this.newUserError.set('Vous devez être connecté pour ajouter un utilisateur.');
+      return;
+    }
+
+    this.apiService.createUser({
+      nom: this.newUserNom.trim(),
+      prenom: this.newUserPrenom.trim(),
+      email,
+      role: this.newUserRole,
+    }).subscribe({
+      next: () => {
+        this.loadUsers();
+        this.addUserModalOpen.set(false);
+        this.resetNewUserForm();
+      },
+      error: (err: any) => {
+        if (err?.status === 401) {
+          this.newUserError.set('Session expirée ou non autorisée. Veuillez vous reconnecter.');
+        } else if (err?.status === 403) {
+          this.newUserError.set('Vous devez être administrateur pour ajouter un utilisateur.');
+        } else {
+          this.newUserError.set(err?.error?.message || 'Impossible d\'ajouter l\'utilisateur.');
+        }
+      }
+    });
   }
 
   confirmArchive() {
@@ -241,12 +373,12 @@ export class UserManagementComponent implements OnInit {
   }
 
   closeModals() {
+    this.addUserModalOpen.set(false);
     this.archiveModalOpen.set(false);
     this.deleteModalOpen.set(false);
     this.activationModalOpen.set(false);
     this.deactivationModalOpen.set(false);
     this.editModalOpen.set(false);
-    this.archiveWarningModalOpen.set(false);
     this.selectedUser.set(null);
     this.selectedRole.set('');
     this.openActionMenuId.set(null);
@@ -297,6 +429,10 @@ export class UserManagementComponent implements OnInit {
     }
   }
 
+  pageNumbers(): number[] {
+    return Array.from({ length: this.totalPages }, (_, index) => index + 1);
+  }
+
   getStatusClass(status: string): string {
     switch (status) {
       case 'active':
@@ -329,5 +465,49 @@ export class UserManagementComponent implements OnInit {
         fallback.style.display = 'none';
       }
     }
+  }
+
+  async handleExcelImport(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) {
+      return;
+    }
+
+    this.importingUsers.set(true);
+    this.importFeedback.set(null);
+    this.importFeedbackType.set(null);
+
+    try {
+      const result = await firstValueFrom(this.apiService.importUsers(file));
+      this.loadUsers();
+      this.importFeedback.set(`Import terminé : ${result.success} utilisateur(s) ajouté(s), ${result.failed} échec(s).`);
+      this.importFeedbackType.set('success');
+      if (result.errors.length > 0) {
+        this.importFeedback.set(this.importFeedback() + '\nErreurs: ' + result.errors.join('\n'));
+      }
+    } catch (err: any) {
+      this.importFeedback.set(err?.message || 'Impossible d\'importer les utilisateurs depuis le fichier.');
+      this.importFeedbackType.set('error');
+    } finally {
+      this.importingUsers.set(false);
+      input.value = '';
+    }
+  }
+
+  exportUsers() {
+    this.apiService.exportUsers(this.searchTerm()).subscribe({
+      next: (blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'utilisateurs.xlsx';
+        link.click();
+        window.URL.revokeObjectURL(url);
+      },
+      error: () => {
+        this.error.set('Impossible d\'exporter la liste des utilisateurs.');
+      },
+    });
   }
 }

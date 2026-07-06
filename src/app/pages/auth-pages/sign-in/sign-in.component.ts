@@ -20,8 +20,12 @@ export class SignInComponent implements OnInit {
 
   ngOnInit() {
     this.route.queryParams.subscribe(params => {
-      if (params['message'] === 'account_inactive') {
-        this.message = 'Your account is inactive. Please wait for the admin to activate your account.';
+      const message = params['message'];
+      if (message === 'account_inactive') {
+        this.message = 'Votre compte est inactif. Veuillez attendre que l\'administrateur l\'active.';
+        this.showMessage = true;
+      } else if (message === 'account_not_registered') {
+        this.message = 'Ce compte Google n\'est pas enregistré. Veuillez contacter l\'administrateur.';
         this.showMessage = true;
       }
     });

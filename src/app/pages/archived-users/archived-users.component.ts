@@ -41,7 +41,7 @@ export class ArchivedUsersComponent implements OnInit {
   
   // Pagination
   currentPage = 1;
-  itemsPerPage = 10;
+  itemsPerPage = 6;
   
   get totalPages(): number {
     return Math.ceil(this.filteredUsers().length / this.itemsPerPage);
