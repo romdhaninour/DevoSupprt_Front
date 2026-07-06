@@ -26,17 +26,67 @@ type NavItem = {
 })
 export class AppSidebarComponent {
 
-  // Main nav items - simplified for cleaner view
-  navItems: NavItem[] = [];
+  // Shared nav items for all authenticated roles
+  navItems: NavItem[] = [
+    {
+      name: "Tickets",
+      icon: `<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 7v10a2 2 0 002 2h12a2 2 0 002-2V7H4z" stroke="currentColor" stroke-width="1.2"/><path d="M8 11h8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>`,
+      path: "/tickets",
+    },
+    {
+      name: "Chat",
+      icon: `<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" stroke="currentColor" stroke-width="1.2"/></svg>`,
+      path: "/chat",
+    },
+  ];
+
+  // IT-only nav items
+  itNavItems: NavItem[] = [
+    {
+      name: "Utilisateurs",
+      icon: `<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 12c2.209 0 4-1.791 4-4s-1.791-4-4-4-4 1.791-4 4 1.791 4 4 4z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 20c0-2.209 3.582-4 8-4s8 1.791 8 4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+      path: "/user-management",
+    },
+    {
+      name: "Appareils",
+      icon: `<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="5" width="18" height="12" rx="2" stroke="currentColor" stroke-width="1.4"/><path d="M8 19h8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>`,
+      path: '/device-management',
+    },
+    {
+      name: "Mes appareils",
+      icon: `<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="6" y="3" width="12" height="18" rx="2" stroke="currentColor" stroke-width="1.2"/><circle cx="12" cy="18" r="0.8" fill="currentColor"/></svg>`,
+      path: '/consultant-devices',
+    }
+  ];
 
   // Admin-only nav items
   adminNavItems: NavItem[] = [
     {
       name: "Utilisateurs",
-      icon: `<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C11.5858 2 11.25 2.33579 11.25 2.75V12C11.25 12.4142 11.5858 12.75 12 12.75H21.25C21.6642 12.75 22 12.4142 22 12C22 6.47715 17.5228 2 12 2ZM12.75 11.25V3.53263C13.2645 3.57761 13.7659 3.66843 14.25 3.80098V3.80099C15.6929 4.19606 16.9827 4.96184 18.0104 5.98959C19.0382 7.01734 19.8039 8.30707 20.199 9.75C20.3316 10.2341 20.4224 10.7355 20.4674 11.25H12.75ZM2 12C2 7.25083 5.31065 3.27489 9.75 2.25415V3.80099C6.14748 4.78734 3.5 8.0845 3.5 12C3.5 16.6944 7.30558 20.5 12 20.5C15.9155 20.5 19.2127 17.8525 20.199 14.25H21.7459C20.7251 18.6894 16.7492 22 12 22C6.47715 22 2 17.5229 2 12Z" fill="currentColor"></path></svg>`,
+      icon: `<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 12c2.209 0 4-1.791 4-4s-1.791-4-4-4-4 1.791-4 4 1.791 4 4 4z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 20c0-2.209 3.582-4 8-4s8 1.791 8 4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
       path: "/user-management",
     },
+    {
+      name: "Appareils",
+      icon: `<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="5" width="18" height="12" rx="2" stroke="currentColor" stroke-width="1.4"/><path d="M8 19h8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>`,
+      path: '/device-management',
+    },
+    {
+      name: "Mes appareils",
+      icon: `<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="6" y="3" width="12" height="18" rx="2" stroke="currentColor" stroke-width="1.2"/><circle cx="12" cy="18" r="0.8" fill="currentColor"/></svg>`,
+      path: '/consultant-devices',
+    }
   ];
+
+  // Consultant nav items
+  consultantNavItems: NavItem[] = [
+    {
+      name: "Mes appareils",
+      icon: `<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="6" y="3" width="12" height="18" rx="2" stroke="currentColor" stroke-width="1.2"/><circle cx="12" cy="18" r="0.8" fill="currentColor"/></svg>`,
+      path: '/consultant-devices',
+    }
+  ];
+
   // Others nav items - removed for cleaner sidebar
   othersItems: NavItem[] = [];
 
@@ -54,7 +104,52 @@ export class AppSidebarComponent {
   get combinedNavItems(): NavItem[] {
     const userRole = localStorage.getItem('user_role');
     const isAdmin = userRole === 'ADMIN';
-    return isAdmin ? [...this.navItems, ...this.adminNavItems] : this.navItems;
+    const isIT = userRole === 'IT';
+    const isConsultant = userRole === 'CONSULTANT';
+
+    // Build base merged set depending on role
+    let mergedSource: NavItem[] = [];
+    if (isAdmin) mergedSource = [...this.navItems, ...this.adminNavItems, ...this.consultantNavItems];
+    else if (isIT) mergedSource = [...this.navItems, ...this.itNavItems, ...this.consultantNavItems];
+    else mergedSource = [...this.navItems, ...this.consultantNavItems];
+
+    // Deduplicate by path preserving first occurrence
+    const dedupMap = new Map<string | undefined, NavItem>();
+    for (const item of mergedSource) {
+      if (!dedupMap.has(item.path)) dedupMap.set(item.path, item);
+    }
+
+    const deduped = Array.from(dedupMap.values());
+
+    // Apply role-based filtering: admin sees everything; IT cannot see 'Utilisateurs';
+    // Consultants cannot see 'Utilisateurs' and 'Appareils'.
+    let allowed: NavItem[];
+    if (isAdmin) {
+      allowed = deduped;
+    } else if (isIT) {
+      allowed = deduped.filter(i => i.path !== '/user-management');
+    } else if (isConsultant) {
+      allowed = deduped.filter(i => i.path !== '/user-management' && i.path !== '/device-management');
+    } else {
+      // default: be conservative
+      allowed = deduped.filter(i => i.path !== '/user-management' && i.path !== '/device-management');
+    }
+
+    // Desired ordering: Utilisateurs, Appareils, Mes appareils, Tickets, Chat, then any remaining
+    const lookup = (path: string) => allowed.find(i => i.path === path);
+    const orderedPaths = ['/user-management', '/device-management', '/consultant-devices', '/tickets', '/chat'];
+    const ordered: NavItem[] = [];
+    for (const p of orderedPaths) {
+      const it = lookup(p);
+      if (it && !ordered.find(o => o.path === it.path)) ordered.push(it);
+    }
+
+    // append any remaining allowed items
+    for (const item of allowed) {
+      if (!ordered.find(o => o.path === item.path)) ordered.push(item);
+    }
+
+    return ordered;
   }
 
   constructor(

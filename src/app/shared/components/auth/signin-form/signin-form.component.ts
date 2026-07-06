@@ -2,12 +2,14 @@
 import { Component, Input } from '@angular/core';
 import { RouterModule, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
+import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-signin-form',
   imports: [
     RouterModule,
-    FormsModule
+    FormsModule,
+    CommonModule,
 ],
   templateUrl: './signin-form.component.html',
   styles: ``

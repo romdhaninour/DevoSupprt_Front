@@ -3,6 +3,7 @@ import { DropdownComponent } from '../../ui/dropdown/dropdown.component';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 import { DropdownItemTwoComponent } from '../../ui/dropdown/dropdown-item/dropdown-item.component-two';
+import { ApiService } from '../../../../services/api.service';
 
 @Component({
   selector: 'app-user-dropdown',
@@ -13,7 +14,7 @@ export class UserDropdownComponent implements OnInit {
   isOpen = false;
   user: any = {};
 
-  constructor(private router: Router) {}
+  constructor(private router: Router, private apiService: ApiService) {}
 
   ngOnInit() {
     this.loadUserData();
@@ -24,12 +25,26 @@ export class UserDropdownComponent implements OnInit {
   }
 
   loadUserData() {
+    const localProfilePicture = localStorage.getItem('user_profile_picture') || '';
     this.user = {
       nom: localStorage.getItem('user_nom') || '',
       prenom: localStorage.getItem('user_prenom') || '',
       email: localStorage.getItem('user_email') || '',
-      profilePicture: localStorage.getItem('user_profile_picture') || ''
+      profilePicture: localProfilePicture
     };
+
+    this.apiService.getCurrentUser().subscribe({
+      next: (currentUser) => {
+        this.user = {
+          ...this.user,
+          ...currentUser,
+          profilePicture: currentUser.profilePicture || localProfilePicture
+        };
+      },
+      error: () => {
+        // keep stored fallback values if current user cannot be fetched
+      }
+    });
   }
 
   get displayName() {
@@ -37,12 +52,8 @@ export class UserDropdownComponent implements OnInit {
   }
 
   get avatar() {
-    // Check localStorage for the most up-to-date profile picture
     const storedProfilePicture = localStorage.getItem('user_profile_picture');
-    if (storedProfilePicture && storedProfilePicture.trim() !== '') {
-      return storedProfilePicture;
-    }
-    return '/images/user/owner.png';
+    return this.user.profilePicture || storedProfilePicture || '/images/user/owner.png';
   }
 
   toggleDropdown() {

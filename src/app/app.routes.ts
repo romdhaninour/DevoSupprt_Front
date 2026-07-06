@@ -16,13 +16,18 @@ import { ButtonsComponent } from './pages/ui-elements/buttons/buttons.component'
 import { ImagesComponent } from './pages/ui-elements/images/images.component';
 import { VideosComponent } from './pages/ui-elements/videos/videos.component';
 import { SignInComponent } from './pages/auth-pages/sign-in/sign-in.component';
-import { SignUpComponent } from './pages/auth-pages/sign-up/sign-up.component';
 import { CalenderComponent } from './pages/calender/calender.component';
 import { UserManagementComponent } from './pages/user-management/user-management.component';
 import { ArchivedUsersComponent } from './pages/archived-users/archived-users.component';
+import { DeviceManagementComponent } from './pages/device-management/device-management.component';
+import { DeviceAllocationComponent } from './pages/device-allocation/device-allocation.component';
+import { TicketsComponent } from './pages/tickets/tickets.component';
+import { ChatComponent } from './pages/chat/chat.component';
+import { ConsultantDevicesComponent } from './pages/consultant-devices/consultant-devices.component';
 import { AuthCallbackComponent } from './pages/auth-callback/auth-callback.component';
 import { authGuard } from './guards/auth.guard';
 import { AdminGuard } from './guards/admin.guard';
+import { ITGuard } from './guards/it.guard';
 
 export const routes: Routes = [
   {
@@ -120,6 +125,33 @@ export const routes: Routes = [
         canActivate: [AdminGuard],
         title:'Archived Users | DevoSupport'
       },
+      {
+        path:'device-management',
+        component:DeviceManagementComponent,
+        canActivate: [ITGuard],
+        title:'Device Management | DevoSupport'
+      },
+      {
+        path:'device-allocation',
+        component:DeviceAllocationComponent,
+        canActivate: [ITGuard],
+        title:'Device Allocation | DevoSupport'
+      },
+      {
+        path:'tickets',
+        component:TicketsComponent,
+        title:'Tickets | DevoSupport'
+      },
+      {
+        path:'chat',
+        component:ChatComponent,
+        title:'Chat | DevoSupport'
+      },
+      {
+        path:'consultant-devices',
+        component:ConsultantDevicesComponent,
+        title:'Consultant Devices | DevoSupport'
+      },
     ]
   },
   // auth pages
@@ -127,11 +159,6 @@ export const routes: Routes = [
     path:'signin',
     component:SignInComponent,
     title:'Angular Sign In Dashboard | TailAdmin - Angular Admin Dashboard Template'
-  },
-  {
-    path:'signup',
-    component:SignUpComponent,
-    title:'Angular Sign Up Dashboard | TailAdmin - Angular Admin Dashboard Template'
   },
   {
     path:'auth/callback',

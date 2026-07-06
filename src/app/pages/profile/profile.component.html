@@ -1,10 +1,167 @@
-<app-page-breadcrumb pageTitle="Profile" />
-<div class="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] lg:p-6">
-  <h3 class="mb-5 text-lg font-semibold text-gray-800 dark:text-white/90 lg:mb-7">
-    Profile
-  </h3>
-  <div class="space-y-6">
-    <div><app-user-meta-card [user]="user"/></div>
-    <div><app-user-info-card [user]="user"/></div>
+<div class="space-y-6">
+  <!-- Header -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-1">Mon Profil</h1>
+      <p class="text-gray-600 dark:text-gray-400 text-sm">Gérer vos informations personnelles</p>
+    </div>
+    <div class="flex items-center gap-3">
+      <button
+        type="button"
+        (click)="openEditModal()"
+        class="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 transition-colors"
+      >
+        <svg class="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
+          <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+        </svg>
+        Modifier le profil
+      </button>
+    </div>
+  </div>
+
+  <!-- User Meta Card -->
+  <div class="animate-fade-in">
+    <app-user-meta-card [user]="user"/>
+  </div>
+  
+  <!-- User Info Card -->
+  <div class="animate-fade-in" style="animation-delay: 100ms;">
+    <app-user-info-card [user]="user"/>
   </div>
 </div>
+
+<!-- Edit Profile Modal -->
+<app-modal
+  [isOpen]="isEditModalOpen"
+  (close)="closeEditModal()"
+  [showCloseButton]="false"
+  className="max-w-[550px] m-4"
+>
+  <div class="relative w-full max-w-[550px] rounded-2xl bg-white dark:bg-gray-900 overflow-hidden shadow-2xl animate-modal-in">
+    <!-- Modal Header -->
+    <div class="bg-blue-600 dark:bg-blue-700 px-6 py-5">
+      <div class="flex items-center justify-between">
+        <div>
+          <h4 class="text-xl font-bold text-white">
+            Modifier le profil
+          </h4>
+          <p class="mt-0.5 text-sm text-blue-100">
+            Mettez à jour vos informations personnelles
+          </p>
+        </div>
+        <button
+          type="button"
+          (click)="closeEditModal()"
+          class="rounded-lg bg-white/20 p-2 text-white hover:bg-white/30 transition-colors focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-blue-600"
+          aria-label="Fermer"
+        >
+          <svg class="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" clip-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" />
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Modal Body -->
+    <form class="flex flex-col" (ngSubmit)="saveProfile()">
+      <div class="px-6 py-6 space-y-6">
+        <!-- Profile Picture Section -->
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+            Photo de profil
+          </label>
+          <div class="flex items-start gap-4">
+            <div class="relative flex-shrink-0">
+              <div class="w-20 h-20 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-bold text-2xl overflow-hidden ring-4 ring-gray-100 dark:ring-gray-800 shadow-md">
+                <img
+                  *ngIf="editForm.profilePicture && !imageError"
+                  [src]="editForm.profilePicture"
+                  [alt]="'Photo de profil'"
+                  class="w-full h-full object-cover"
+                  (error)="imageError = true"
+                />
+                <span *ngIf="!editForm.profilePicture || imageError">
+                  {{ user.prenom?.[0] || '' }}{{ user.nom?.[0] || '' }}
+                </span>
+              </div>
+            </div>
+            <div class="flex-1">
+              <input
+                type="url"
+                [(ngModel)]="editForm.profilePicture"
+                name="profilePicture"
+                class="w-full px-4 py-2.5 rounded-xl border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:border-gray-700 dark:bg-gray-800 dark:text-white text-sm transition-all duration-200"
+                placeholder="https://exemple.com/photo.jpg"
+                [class.border-red-300]="imageError"
+                [class.focus:ring-red-500]="imageError"
+                [class.dark:border-red-700]="imageError"
+              />
+              <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                Collez l'URL de votre image (Google Photos, imgur, etc.)
+              </p>
+              <p *ngIf="imageError" class="mt-1 text-xs text-red-600 dark:text-red-400">
+                L'URL de l'image n'est pas valide
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Name Fields -->
+        <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+              Prénom
+            </label>
+            <input
+              type="text"
+              [(ngModel)]="editForm.prenom"
+              name="prenom"
+              required
+              class="w-full px-4 py-2.5 rounded-xl border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:border-gray-700 dark:bg-gray-800 dark:text-white text-sm transition-all duration-200"
+              placeholder="Entrez votre prénom"
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+              Nom
+            </label>
+            <input
+              type="text"
+              [(ngModel)]="editForm.nom"
+              name="nom"
+              required
+              class="w-full px-4 py-2.5 rounded-xl border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:border-gray-700 dark:bg-gray-800 dark:text-white text-sm transition-all duration-200"
+              placeholder="Entrez votre nom"
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="px-6 py-5 bg-gray-50 dark:bg-gray-800/50 border-t border-gray-200 dark:border-gray-700">
+        <div class="flex items-center justify-end gap-3">
+          <button
+            type="button"
+            (click)="closeEditModal()"
+            [disabled]="saving"
+            class="px-5 py-2.5 text-sm font-semibold rounded-xl border-2 border-gray-300 bg-white text-gray-700 hover:bg-gray-50 hover:border-gray-400 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Annuler
+          </button>
+          <button
+            type="submit"
+            [disabled]="saving"
+            class="px-5 py-2.5 text-sm font-semibold rounded-xl bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-gray-900 disabled:opacity-50 disabled:cursor-not-allowed shadow-md transition-all duration-200"
+          >
+            <span class="flex items-center gap-2">
+              <svg *ngIf="saving" class="w-4 h-4 animate-spin" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" clip-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" />
+              </svg>
+              {{ saving ? 'Enregistrement...' : 'Enregistrer' }}
+            </span>
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+</app-modal>
