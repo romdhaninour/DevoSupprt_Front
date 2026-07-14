@@ -281,4 +281,294 @@ describe('ApiService', () => {
       localStorage.removeItem('auth_token');
     });
   });
+
+  describe('Ticket API methods', () => {
+    const mockTicket = {
+      _id: '507f1f77bcf86cd799439012',
+      title: 'Test Ticket',
+      description: 'Test description',
+      status: 'OPEN',
+      priority: 'MEDIUM',
+      issueType: 'HARDWARE',
+      createdAt: new Date(),
+    };
+
+    describe('createTicket', () => {
+      it('should create a ticket', () => {
+        const newTicketData = { title: 'New Ticket', description: 'Test', issueType: 'HARDWARE', priority: 'MEDIUM' };
+        
+        service.createTicket(newTicketData).subscribe(ticket => {
+          expect(ticket).toEqual(mockTicket);
+        });
+
+        const req = httpMock.expectOne('http://localhost:3000/tickets');
+        expect(req.request.method).toBe('POST');
+        expect(req.request.body).toEqual(newTicketData);
+        req.flush(mockTicket);
+      });
+
+      it('should include Authorization header when token exists', () => {
+        localStorage.setItem('auth_token', 'test-token');
+        
+        service.createTicket({}).subscribe();
+
+        const req = httpMock.expectOne('http://localhost:3000/tickets');
+        expect(req.request.headers.get('Authorization')).toBe('Bearer test-token');
+        localStorage.removeItem('auth_token');
+      });
+    });
+
+    describe('getTickets', () => {
+      it('should return tickets', () => {
+        const mockTicketsResponse = { tickets: [mockTicket], total: 1 };
+        
+        service.getTickets().subscribe(response => {
+          expect(response).toEqual(mockTicketsResponse);
+        });
+
+        const req = httpMock.expectOne('http://localhost:3000/tickets');
+        expect(req.request.method).toBe('GET');
+        req.flush(mockTicketsResponse);
+      });
+
+      it('should include status filter in query params', () => {
+        service.getTickets('OPEN').subscribe();
+
+        const req = httpMock.expectOne('http://localhost:3000/tickets?status=OPEN');
+        expect(req.request.method).toBe('GET');
+        req.flush({ tickets: [], total: 0 });
+      });
+
+      it('should include multiple filters in query params', () => {
+        service.getTickets('OPEN', 'HIGH', 'HARDWARE').subscribe();
+
+        const req = httpMock.expectOne('http://localhost:3000/tickets?status=OPEN&priority=HIGH&issueType=HARDWARE');
+        expect(req.request.method).toBe('GET');
+        req.flush({ tickets: [], total: 0 });
+      });
+    });
+
+    describe('getTicket', () => {
+      it('should return a single ticket', () => {
+        service.getTicket('507f1f77bcf86cd799439012').subscribe(ticket => {
+          expect(ticket).toEqual(mockTicket);
+        });
+
+        const req = httpMock.expectOne('http://localhost:3000/tickets/507f1f77bcf86cd799439012');
+        expect(req.request.method).toBe('GET');
+        req.flush(mockTicket);
+      });
+
+      it('should include Authorization header when token exists', () => {
+        localStorage.setItem('auth_token', 'test-token');
+        
+        service.getTicket('507f1f77bcf86cd799439012').subscribe();
+
+        const req = httpMock.expectOne('http://localhost:3000/tickets/507f1f77bcf86cd799439012');
+        expect(req.request.headers.get('Authorization')).toBe('Bearer test-token');
+        localStorage.removeItem('auth_token');
+      });
+    });
+
+    describe('updateTicketStatus', () => {
+      it('should update ticket status', () => {
+        const updateData = { status: 'IN_PROGRESS' };
+        const updatedTicket = { ...mockTicket, status: 'IN_PROGRESS' };
+        
+        service.updateTicketStatus('507f1f77bcf86cd799439012', updateData).subscribe(ticket => {
+          expect(ticket).toEqual(updatedTicket);
+        });
+
+        const req = httpMock.expectOne('http://localhost:3000/tickets/507f1f77bcf86cd799439012/status');
+        expect(req.request.method).toBe('PATCH');
+        expect(req.request.body).toEqual(updateData);
+        req.flush(updatedTicket);
+      });
+
+      it('should include resolution in update data', () => {
+        const updateData = { status: 'RESOLVED', resolution: 'REPAIR' };
+        
+        service.updateTicketStatus('507f1f77bcf86cd799439012', updateData).subscribe();
+
+        const req = httpMock.expectOne('http://localhost:3000/tickets/507f1f77bcf86cd799439012/status');
+        expect(req.request.body).toEqual(updateData);
+        req.flush(mockTicket);
+      });
+    });
+
+    describe('assignTicket', () => {
+      it('should assign a ticket', () => {
+        const assignData = { assignedTo: '507f1f77bcf86cd799439011' };
+        const assignedTicket = { ...mockTicket, assignedTo: mockUser };
+        
+        service.assignTicket('507f1f77bcf86cd799439012', assignData).subscribe(ticket => {
+          expect(ticket).toEqual(assignedTicket);
+        });
+
+        const req = httpMock.expectOne('http://localhost:3000/tickets/507f1f77bcf86cd799439012/assign');
+        expect(req.request.method).toBe('PATCH');
+        expect(req.request.body).toEqual(assignData);
+        req.flush(assignedTicket);
+      });
+    });
+
+    describe('addTicketComment', () => {
+      it('should add a comment to a ticket', () => {
+        const commentData = { text: 'Test comment' };
+        const ticketWithComment = {
+          ...mockTicket,
+          comments: [{ author: mockUser, text: 'Test comment', createdAt: new Date() }]
+        };
+        
+        service.addTicketComment('507f1f77bcf86cd799439012', commentData).subscribe(ticket => {
+          expect(ticket).toEqual(ticketWithComment);
+        });
+
+        const req = httpMock.expectOne('http://localhost:3000/tickets/507f1f77bcf86cd799439012/comments');
+        expect(req.request.method).toBe('POST');
+        expect(req.request.body).toEqual(commentData);
+        req.flush(ticketWithComment);
+      });
+    });
+
+    describe('deleteTicket', () => {
+      it('should delete a ticket', () => {
+        const deleteResponse = { message: 'Ticket deleted successfully' };
+        
+        service.deleteTicket('507f1f77bcf86cd799439012').subscribe(response => {
+          expect(response).toEqual(deleteResponse);
+        });
+
+        const req = httpMock.expectOne('http://localhost:3000/tickets/507f1f77bcf86cd799439012');
+        expect(req.request.method).toBe('DELETE');
+        req.flush(deleteResponse);
+      });
+
+      it('should include Authorization header when token exists', () => {
+        localStorage.setItem('auth_token', 'test-token');
+        
+        service.deleteTicket('507f1f77bcf86cd799439012').subscribe();
+
+        const req = httpMock.expectOne('http://localhost:3000/tickets/507f1f77bcf86cd799439012');
+        expect(req.request.headers.get('Authorization')).toBe('Bearer test-token');
+        localStorage.removeItem('auth_token');
+      });
+    });
+  });
+
+  describe('Device API methods', () => {
+    const mockDevice = {
+      _id: '507f1f77bcf86cd799439013',
+      name: 'Test Device',
+      type: 'LAPTOP',
+      status: 'available',
+      serialNumber: 'SN123456',
+    };
+
+    describe('getDevices', () => {
+      it('should return devices', () => {
+        const mockDevicesResponse = { devices: [mockDevice], total: 1, page: 1, limit: 10 };
+        
+        service.getDevices().subscribe(response => {
+          expect(response).toEqual(mockDevicesResponse);
+        });
+
+        const req = httpMock.expectOne('http://localhost:3000/devices');
+        expect(req.request.method).toBe('GET');
+        req.flush(mockDevicesResponse);
+      });
+
+      it('should include pagination params', () => {
+        service.getDevices(1, 20).subscribe();
+
+        const req = httpMock.expectOne('http://localhost:3000/devices?page=1&limit=20');
+        expect(req.request.method).toBe('GET');
+        req.flush({ devices: [], total: 0, page: 1, limit: 20 });
+      });
+
+      it('should include search and status filters', () => {
+        service.getDevices(1, 10, 'test', 'available', 'LAPTOP').subscribe();
+
+        const req = httpMock.expectOne('http://localhost:3000/devices?page=1&limit=10&search=test&status=available&type=LAPTOP');
+        expect(req.request.method).toBe('GET');
+        req.flush({ devices: [], total: 0, page: 1, limit: 10 });
+      });
+    });
+
+    describe('createDevice', () => {
+      it('should create a device', () => {
+        const newDeviceData = { name: 'New Device', type: 'LAPTOP', serialNumber: 'SN789' };
+        
+        service.createDevice(newDeviceData).subscribe(device => {
+          expect(device).toEqual(mockDevice);
+        });
+
+        const req = httpMock.expectOne('http://localhost:3000/devices');
+        expect(req.request.method).toBe('POST');
+        expect(req.request.body).toEqual(newDeviceData);
+        req.flush(mockDevice);
+      });
+    });
+
+    describe('updateDevice', () => {
+      it('should update a device', () => {
+        const updateData = { name: 'Updated Device' };
+        const updatedDevice = { ...mockDevice, name: 'Updated Device' };
+        
+        service.updateDevice('507f1f77bcf86cd799439013', updateData).subscribe(device => {
+          expect(device).toEqual(updatedDevice);
+        });
+
+        const req = httpMock.expectOne('http://localhost:3000/devices/507f1f77bcf86cd799439013');
+        expect(req.request.method).toBe('PATCH');
+        expect(req.request.body).toEqual(updateData);
+        req.flush(updatedDevice);
+      });
+    });
+
+    describe('deleteDevice', () => {
+      it('should delete a device', () => {
+        const deleteResponse = { message: 'Device deleted successfully' };
+        
+        service.deleteDevice('507f1f77bcf86cd799439013').subscribe(response => {
+          expect(response).toEqual(deleteResponse);
+        });
+
+        const req = httpMock.expectOne('http://localhost:3000/devices/507f1f77bcf86cd799439013');
+        expect(req.request.method).toBe('DELETE');
+        req.flush(deleteResponse);
+      });
+    });
+
+    describe('allocateDevice', () => {
+      it('should allocate a device to a consultant', () => {
+        const allocateData = { consultantId: '507f1f77bcf86cd799439011' };
+        const allocatedDevice = { ...mockDevice, assignedTo: mockUser };
+        
+        service.allocateDevice('507f1f77bcf86cd799439013', allocateData.consultantId).subscribe(device => {
+          expect(device).toEqual(allocatedDevice);
+        });
+
+        const req = httpMock.expectOne('http://localhost:3000/devices/507f1f77bcf86cd799439013/allocate');
+        expect(req.request.method).toBe('PATCH');
+        expect(req.request.body).toEqual(allocateData);
+        req.flush(allocatedDevice);
+      });
+    });
+
+    describe('returnDevice', () => {
+      it('should return a device', () => {
+        const returnedDevice = { ...mockDevice, assignedTo: null };
+        
+        service.returnDevice('507f1f77bcf86cd799439013').subscribe(device => {
+          expect(device).toEqual(returnedDevice);
+        });
+
+        const req = httpMock.expectOne('http://localhost:3000/devices/507f1f77bcf86cd799439013/return');
+        expect(req.request.method).toBe('PATCH');
+        expect(req.request.body).toEqual({});
+        req.flush(returnedDevice);
+      });
+    });
+  });
 });

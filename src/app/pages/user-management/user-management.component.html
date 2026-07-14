@@ -177,8 +177,8 @@
                 <div class="flex items-center gap-3">
                   <div class="w-12 h-12 overflow-hidden rounded-full profile-image-container ring-2 ring-gray-100 dark:ring-gray-700 group-hover:ring-blue-200 dark:group-hover:ring-blue-800 transition-all duration-200">
                     <img
-                      *ngIf="user.profilePicture && user.profilePicture !== ''"
-                      [src]="user.profilePicture"
+                      *ngIf="getProfilePictureUrl(user)"
+                      [src]="getProfilePictureUrl(user)"
                       [alt]="user.prenom + ' ' + user.nom"
                       class="w-full h-full object-cover"
                       (error)="onImageError($event)"
@@ -187,7 +187,7 @@
                     />
                     <div
                       class="w-full h-full rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-semibold text-sm fallback-avatar"
-                      [style.display]="user.profilePicture && user.profilePicture !== '' ? 'none' : 'flex'"
+                      [style.display]="getProfilePictureUrl(user) ? 'none' : 'flex'"
                     >
                       {{ user.prenom[0] }}{{ user.nom[0] }}
                     </div>
@@ -320,8 +320,8 @@
               <div class="flex items-center gap-3">
                 <div class="w-12 h-12 overflow-hidden rounded-full profile-image-container ring-2 ring-gray-100 dark:ring-gray-700">
                   <img
-                    *ngIf="user.profilePicture && user.profilePicture !== ''"
-                    [src]="user.profilePicture"
+                    *ngIf="getProfilePictureUrl(user)"
+                    [src]="getProfilePictureUrl(user)"
                     [alt]="user.prenom + ' ' + user.nom"
                     class="w-full h-full object-cover"
                     (error)="onImageError($event)"
@@ -330,7 +330,7 @@
                   />
                   <div
                     class="w-full h-full rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-semibold text-sm fallback-avatar"
-                    [style.display]="user.profilePicture && user.profilePicture !== '' ? 'none' : 'flex'"
+                    [style.display]="getProfilePictureUrl(user) ? 'none' : 'flex'"
                   >
                     {{ user.prenom[0] }}{{ user.nom[0] }}
                   </div>
@@ -470,46 +470,69 @@
 
   <!-- Add User Modal -->
   <app-modal [isOpen]="addUserModalOpen()" (close)="closeModals()" className="max-w-lg mx-4">
-    <div class="p-6">
+    <form #userForm="ngForm" (ngSubmit)="confirmAddUser()" novalidate class="p-6">
       <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Ajouter un nouvel utilisateur</h3>
       <div class="space-y-4">
         <div>
           <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Prénom</label>
           <input
             type="text"
+            name="prenom"
+            required
+            minlength="2"
             [(ngModel)]="newUserPrenom"
+            #prenomModel="ngModel"
             class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
             placeholder="Prénom"
           />
+          <div *ngIf="prenomModel.invalid && (prenomModel.touched || prenomModel.dirty)" class="text-sm text-rose-600 mt-1">Le prénom est requis (2 caractères min).</div>
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Nom</label>
           <input
             type="text"
+            name="nom"
+            required
+            minlength="2"
             [(ngModel)]="newUserNom"
+            #nomModel="ngModel"
             class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
             placeholder="Nom"
           />
+          <div *ngIf="nomModel.invalid && (nomModel.touched || nomModel.dirty)" class="text-sm text-rose-600 mt-1">Le nom est requis (2 caractères min).</div>
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Email</label>
           <input
             type="email"
+            name="email"
+            required
+            email
             [(ngModel)]="newUserEmail"
+            #emailModel="ngModel"
             class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
             placeholder="Email"
           />
+          <div *ngIf="emailModel.invalid && (emailModel.touched || emailModel.dirty)" class="text-sm text-rose-600 mt-1">
+            <span *ngIf="emailModel.errors?.['required']">L'email est requis.</span>
+            <span *ngIf="emailModel.errors?.['email']">Veuillez entrer une adresse email valide.</span>
+          </div>
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Rôle</label>
           <select
+            name="role"
+            required
             [(ngModel)]="newUserRole"
+            #roleModel="ngModel"
             class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
           >
+            <option value="">Sélectionner un rôle</option>
             <option value="IT">IT</option>
             <option value="ADMIN">ADMIN</option>
             <option value="CONSULTANT">CONSULTANT</option>
           </select>
+          <div *ngIf="roleModel.invalid && (roleModel.touched || roleModel.dirty)" class="text-sm text-rose-600 mt-1">Le rôle est requis.</div>
         </div>
         <div *ngIf="newUserError()" class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-700 dark:bg-red-900/20 dark:text-red-300">
           {{ newUserError() }}
@@ -524,14 +547,14 @@
           Annuler
         </button>
         <button
-          type="button"
-          (click)="confirmAddUser()"
-          class="px-4 py-2 rounded-xl bg-blue-600 text-sm font-semibold text-white hover:bg-blue-700 transition-colors"
+          type="submit"
+          [disabled]="userForm.invalid"
+          class="px-4 py-2 rounded-xl bg-blue-600 text-sm font-semibold text-white hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
         >
           Ajouter
         </button>
       </div>
-    </div>
+    </form>
   </app-modal>
 
   <!-- Activate Confirmation Modal -->

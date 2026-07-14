@@ -140,7 +140,13 @@ export const routes: Routes = [
       {
         path:'tickets',
         component:TicketsComponent,
+        canActivate: [ITGuard],
         title:'Tickets | DevoSupport'
+      },
+      {
+        path:'my-tickets',
+        component:TicketsComponent,
+        title:'Mes tickets | DevoSupport'
       },
       {
         path:'chat',

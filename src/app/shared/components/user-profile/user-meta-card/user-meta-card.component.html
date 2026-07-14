@@ -3,12 +3,18 @@
     <!-- Avatar with role-colored ring -->
     <div class="relative group">
       <div class="w-24 h-24 sm:w-28 sm:h-28 overflow-hidden rounded-full border-4 {{ roleBadgeColors.ring }} ring-2 ring-offset-2 ring-offset-white dark:ring-offset-gray-900 transition-all duration-300 group-hover:scale-105 group-hover:shadow-lg">
-        <img 
-          [src]="avatar" 
+        <img
+          *ngIf="avatar"
+          [src]="avatar"
           [alt]="displayName"
           class="w-full h-full object-cover"
-          (error)="$event.target.src='/images/user/owner.jpg'"
         />
+        <div
+          *ngIf="!avatar"
+          class="w-full h-full rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-3xl"
+        >
+          {{ initials }}
+        </div>
       </div>
     </div>
 

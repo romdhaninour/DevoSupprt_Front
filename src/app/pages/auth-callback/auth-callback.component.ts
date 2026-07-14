@@ -1,6 +1,5 @@
 import { Component, OnInit } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
-import { NotificationService } from '../../services/notification.service';
 
 @Component({
   selector: 'app-auth-callback',
@@ -12,7 +11,6 @@ export class AuthCallbackComponent implements OnInit {
   constructor(
     private router: Router,
     private route: ActivatedRoute,
-    private notificationService: NotificationService
   ) {}
 
   ngOnInit() {
@@ -27,19 +25,11 @@ export class AuthCallbackComponent implements OnInit {
       const userId = params['userId'];
 
       if (token) {
-        // Check user status and role
         if (status === 'inactive' && role !== 'ADMIN') {
-          // Add notification for admin about new user signup
-          this.notificationService.addNotification(
-            `New user ${prenom} ${nom} (${email}) signed up and needs activation`,
-            'user_signup'
-          );
-          // Inactive non-admin users: redirect to sign-in with message
           this.router.navigate(['/signin'], {
             queryParams: { message: 'account_inactive' }
           });
         } else {
-          // Active users or admins: store token and redirect to dashboard
           localStorage.setItem('auth_token', token);
           localStorage.setItem('user_role', role);
           localStorage.setItem('user_status', status);
@@ -51,7 +41,6 @@ export class AuthCallbackComponent implements OnInit {
           this.router.navigate(['/']);
         }
       } else {
-        // Handle error - no token received
         this.router.navigate(['/signin']);
       }
     });

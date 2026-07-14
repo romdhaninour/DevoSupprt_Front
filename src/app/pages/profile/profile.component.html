@@ -63,7 +63,7 @@
     </div>
 
     <!-- Modal Body -->
-    <form class="flex flex-col" (ngSubmit)="saveProfile()">
+    <form #profileForm="ngForm" class="flex flex-col" (ngSubmit)="saveProfile()">
       <div class="px-6 py-6 space-y-6">
         <!-- Profile Picture Section -->
         <div>
@@ -85,22 +85,44 @@
                 </span>
               </div>
             </div>
-            <div class="flex-1">
-              <input
-                type="url"
-                [(ngModel)]="editForm.profilePicture"
-                name="profilePicture"
-                class="w-full px-4 py-2.5 rounded-xl border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:border-gray-700 dark:bg-gray-800 dark:text-white text-sm transition-all duration-200"
-                placeholder="https://exemple.com/photo.jpg"
-                [class.border-red-300]="imageError"
-                [class.focus:ring-red-500]="imageError"
-                [class.dark:border-red-700]="imageError"
-              />
-              <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                Collez l'URL de votre image (Google Photos, imgur, etc.)
+            <div class="flex-1 space-y-2">
+              <div class="flex gap-2">
+                <input
+                  type="file"
+                  (change)="onProfilePictureSelected($event)"
+                  accept="image/*"
+                  class="hidden"
+                  id="profilePictureInput"
+                />
+                <label
+                  for="profilePictureInput"
+                  class="cursor-pointer inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-xl border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 transition">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0
+ 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                  </svg>
+                  Choisir une photo
+                </label>
+                <button
+                  *ngIf="selectedProfilePicture"
+                  (click)="uploadProfilePicture()"
+                  [disabled]="uploadingProfilePicture"
+                  class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-xl bg-sky-500 text-white hover:bg-sky-600 disabled:opacity-50 transition">
+                  <svg *ngIf="uploadingProfilePicture" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  {{ uploadingProfilePicture ? 'Traitement...' : 'Télécharger' }}
+                </button>
+              </div>
+              <p class="text-xs text-gray-500 dark:text-gray-400">
+                JPG, PNG ou WebP (max 5MB). L'image sera compressée automatiquement.
               </p>
-              <p *ngIf="imageError" class="mt-1 text-xs text-red-600 dark:text-red-400">
-                L'URL de l'image n'est pas valide
+              <p *ngIf="selectedProfilePicture" class="text-xs text-sky-500">
+                Sélectionné: {{ selectedProfilePicture.name }} ({{ formatFileSize(selectedProfilePicture.size) }})
+              </p>
+              <p *ngIf="imageError" class="text-xs text-red-600 dark:text-red-400">
+                Fichier invalide. Veuillez choisir une image.
               </p>
             </div>
           </div>
@@ -117,9 +139,12 @@
               [(ngModel)]="editForm.prenom"
               name="prenom"
               required
+              minlength="2"
+              #prenomModel="ngModel"
               class="w-full px-4 py-2.5 rounded-xl border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:border-gray-700 dark:bg-gray-800 dark:text-white text-sm transition-all duration-200"
               placeholder="Entrez votre prénom"
             />
+            <div *ngIf="prenomModel.invalid && (prenomModel.touched || prenomModel.dirty)" class="text-sm text-rose-600 mt-1">Le prénom est requis (2 caractères min).</div>
           </div>
           <div>
             <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
@@ -130,9 +155,12 @@
               [(ngModel)]="editForm.nom"
               name="nom"
               required
+              minlength="2"
+              #nomModel="ngModel"
               class="w-full px-4 py-2.5 rounded-xl border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:border-gray-700 dark:bg-gray-800 dark:text-white text-sm transition-all duration-200"
               placeholder="Entrez votre nom"
             />
+            <div *ngIf="nomModel.invalid && (nomModel.touched || nomModel.dirty)" class="text-sm text-rose-600 mt-1">Le nom est requis (2 caractères min).</div>
           </div>
         </div>
       </div>
@@ -150,7 +178,7 @@
           </button>
           <button
             type="submit"
-            [disabled]="saving"
+            [disabled]="saving || profileForm.invalid"
             class="px-5 py-2.5 text-sm font-semibold rounded-xl bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-gray-900 disabled:opacity-50 disabled:cursor-not-allowed shadow-md transition-all duration-200"
           >
             <span class="flex items-center gap-2">

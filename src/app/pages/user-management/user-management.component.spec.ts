@@ -1,9 +1,11 @@
 /// <reference types="jasmine" />
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ActivatedRoute } from '@angular/router';
 import { UserManagementComponent } from './user-management.component';
 import { ApiService } from '../../services/api.service';
 import { of, throwError } from 'rxjs';
 import { User } from '../../models/user.model';
+import { NO_ERRORS_SCHEMA } from '@angular/core';
 
 describe('UserManagementComponent', () => {
   let component: UserManagementComponent;
@@ -44,11 +46,21 @@ describe('UserManagementComponent', () => {
       'updateUser',
     ]);
 
+    const mockActivatedRoute = {
+      snapshot: {
+        paramMap: {
+          get: jasmine.createSpy('get').and.returnValue(null)
+        }
+      }
+    };
+
     await TestBed.configureTestingModule({
       imports: [UserManagementComponent],
       providers: [
         { provide: ApiService, useValue: apiSpy },
+        { provide: ActivatedRoute, useValue: mockActivatedRoute },
       ],
+      schemas: [NO_ERRORS_SCHEMA]
     }).compileComponents();
 
     fixture = TestBed.createComponent(UserManagementComponent);

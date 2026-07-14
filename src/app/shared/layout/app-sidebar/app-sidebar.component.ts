@@ -29,9 +29,9 @@ export class AppSidebarComponent {
   // Shared nav items for all authenticated roles
   navItems: NavItem[] = [
     {
-      name: "Tickets",
+      name: "Mes tickets",
       icon: `<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 7v10a2 2 0 002 2h12a2 2 0 002-2V7H4z" stroke="currentColor" stroke-width="1.2"/><path d="M8 11h8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>`,
-      path: "/tickets",
+      path: "/my-tickets",
     },
     {
       name: "Chat",
@@ -42,6 +42,11 @@ export class AppSidebarComponent {
 
   // IT-only nav items
   itNavItems: NavItem[] = [
+    {
+      name: "Tickets",
+      icon: `<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 7v10a2 2 0 002 2h12a2 2 0 002-2V7H4z" stroke="currentColor" stroke-width="1.2"/><path d="M8 11h8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>`,
+      path: "/tickets",
+    },
     {
       name: "Utilisateurs",
       icon: `<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 12c2.209 0 4-1.791 4-4s-1.791-4-4-4-4 1.791-4 4 1.791 4 4 4z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 20c0-2.209 3.582-4 8-4s8 1.791 8 4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
@@ -61,6 +66,11 @@ export class AppSidebarComponent {
 
   // Admin-only nav items
   adminNavItems: NavItem[] = [
+    {
+      name: "Tickets",
+      icon: `<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 7v10a2 2 0 002 2h12a2 2 0 002-2V7H4z" stroke="currentColor" stroke-width="1.2"/><path d="M8 11h8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>`,
+      path: "/tickets",
+    },
     {
       name: "Utilisateurs",
       icon: `<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 12c2.209 0 4-1.791 4-4s-1.791-4-4-4-4 1.791-4 4 1.791 4 4 4z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 20c0-2.209 3.582-4 8-4s8 1.791 8 4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
@@ -137,7 +147,7 @@ export class AppSidebarComponent {
 
     // Desired ordering: Utilisateurs, Appareils, Mes appareils, Tickets, Chat, then any remaining
     const lookup = (path: string) => allowed.find(i => i.path === path);
-    const orderedPaths = ['/user-management', '/device-management', '/consultant-devices', '/tickets', '/chat'];
+    const orderedPaths = ['/user-management', '/device-management', '/consultant-devices', '/tickets', '/my-tickets', '/chat'];
     const ordered: NavItem[] = [];
     for (const p of orderedPaths) {
       const it = lookup(p);

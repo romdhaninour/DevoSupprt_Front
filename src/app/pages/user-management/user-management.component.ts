@@ -467,6 +467,15 @@ export class UserManagementComponent implements OnInit {
     }
   }
 
+  getProfilePictureUrl(user: User): string {
+    if (user.profilePicture && user.profilePicture !== '') {
+      const proxyUrl = `http://localhost:3000/users/${user._id}/profile-picture`;
+      console.log('UserManagementComponent.getProfilePictureUrl - using backend proxy:', proxyUrl);
+      return proxyUrl;
+    }
+    return '';
+  }
+
   async handleExcelImport(event: Event) {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];

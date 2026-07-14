@@ -1,12 +1,13 @@
 <div class="space-y-6">
+  <!-- Header -->
   <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
     <div>
-      <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-1">Inventaire des appareils de l’entreprise</h1>
-      <p class="text-sm text-gray-600 dark:text-gray-400">Gérer les équipements IT, bureautiques et techniques de l’organisation</p>
+      <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-1">Inventaire des appareils</h1>
+      <p class="text-gray-600 dark:text-gray-400 text-sm">Gérer les équipements IT, bureautiques et techniques de l'organisation</p>
     </div>
     <div class="flex flex-wrap items-center gap-3">
       <div class="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-300">
-        {{ total() }} appareil(s) enregistré(s)
+        {{ total() }} appareil(s)
       </div>
       <input #fileInput type="file" accept=".xlsx,.xls,.csv" class="hidden" (change)="handleExcelImport($event)" />
       <button
@@ -30,9 +31,12 @@
         *ngIf="isIT()"
         type="button"
         (click)="openAddForm()"
-        class="rounded-xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700"
+        class="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 transition-colors"
       >
-        + Ajouter un appareil
+        <svg class="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" clip-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" />
+        </svg>
+        Ajouter un appareil
       </button>
     </div>
   </div>
@@ -41,20 +45,72 @@
     {{ importFeedback() }}
   </div>
 
-  <app-modal [isOpen]="showAddForm()" (close)="cancelForm()" className="max-w-2xl mx-4">
-    <form #deviceForm="ngForm" (ngSubmit)="saveDevice()" novalidate class="p-4">
-      <div class="mb-4 flex items-center justify-between">
-        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">{{ editingDeviceId() ? 'Modifier l’appareil' : 'Ajouter un nouvel appareil' }}</h2>
-      </div>
-      <div class="grid gap-4 md:grid-cols-2">
+  <!-- Stats Cards -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-5 animate-fade-in">
+    <!-- Total Devices Card -->
+    <div class="relative bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+      <div class="absolute left-0 top-0 bottom-0 w-1 bg-slate-500"></div>
+      <div class="flex items-center justify-between">
         <div>
-          <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Nom</label>
-          <input name="name" required minlength="2" [(ngModel)]="formDevice().name" #nameModel="ngModel" class="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white" />
-          <div *ngIf="nameModel.invalid && (nameModel.touched || nameModel.dirty)" class="text-sm text-rose-600 mt-1">Le nom est requis (2 caractères min).</div>
+          <p class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Total Appareils</p>
+          <p class="text-3xl font-bold text-gray-900 dark:text-white">{{ total() }}</p>
         </div>
+      </div>
+    </div>
+    
+    <!-- Available Devices Card -->
+    <div class="relative bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+      <div class="absolute left-0 top-0 bottom-0 w-1 bg-emerald-500"></div>
+      <div class="flex items-center justify-between">
         <div>
-          <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Type</label>
-          <select name="type" required [(ngModel)]="formDevice().type" #typeModel="ngModel" class="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white">
+          <p class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Disponibles</p>
+          <p class="text-3xl font-bold text-emerald-600 dark:text-emerald-400">{{ devices().filter(d => d.status === 'available').length }}</p>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Assigned Devices Card -->
+    <div class="relative bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+      <div class="absolute left-0 top-0 bottom-0 w-1 bg-amber-500"></div>
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Assignés</p>
+          <p class="text-3xl font-bold text-amber-600 dark:text-amber-400">{{ devices().filter(d => d.status === 'assigned').length }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Search Bar -->
+  <div class="bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-sm border border-gray-100 dark:border-gray-700 animate-fade-in" style="animation-delay: 100ms;">
+    <div class="flex flex-col lg:flex-row gap-4">
+      <div class="relative flex-1">
+        <span class="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none">
+          <svg class="w-5 h-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" clip-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" />
+          </svg>
+        </span>
+        <input
+          type="text"
+          [ngModel]="searchTerm()"
+          (ngModelChange)="onFilterChange()"
+          placeholder="Rechercher des appareils par nom, série..."
+          class="w-full pl-12 pr-4 py-3.5 rounded-xl border-2 border-gray-200 bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 dark:bg-gray-900 dark:border-gray-700 dark:text-white dark:placeholder:text-gray-500 transition-all duration-200"
+        />
+        <span *ngIf="searchTerm()" class="absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer" (click)="searchTerm.set(''); onFilterChange()">
+          <svg class="w-5 h-5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" clip-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 01-1.414-1.414z" />
+          </svg>
+        </span>
+      </div>
+      <div class="flex flex-wrap gap-3">
+        <div class="relative min-w-[150px]">
+          <select
+            [ngModel]="typeFilter()"
+            (ngModelChange)="onFilterChange()"
+            class="w-full pl-4 pr-10 py-3.5 rounded-xl border border-gray-200 bg-gray-50 text-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300 appearance-none cursor-pointer transition-all duration-200"
+          >
+            <option value="all">Tous les types</option>
             <option value="Laptop">Laptop</option>
             <option value="Desktop">Desktop</option>
             <option value="Mobile">Mobile</option>
@@ -68,254 +124,331 @@
             <option value="Camera">Camera</option>
             <option value="Projecteur">Projecteur</option>
           </select>
+          <span class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+            <svg class="w-4 h-4 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" clip-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" />
+            </svg>
+          </span>
         </div>
-        <div>
-          <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Service / Département</label>
-          <input name="department" [(ngModel)]="formDevice().department" class="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white" />
-        </div>
-        <div>
-          <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Statut</label>
-          <select name="status" required [(ngModel)]="formDevice().status" #statusModel="ngModel" class="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white">
+        <div class="relative min-w-[150px]">
+          <select
+            [ngModel]="statusFilter()"
+            (ngModelChange)="onFilterChange()"
+            class="w-full pl-4 pr-10 py-3.5 rounded-xl border border-gray-200 bg-gray-50 text-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300 appearance-none cursor-pointer transition-all duration-200"
+          >
+            <option value="all">Tous les statuts</option>
             <option value="available">Disponible</option>
             <option value="assigned">Assigné</option>
             <option value="maintenance">Maintenance</option>
             <option value="retired">Retiré</option>
           </select>
+          <span class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+            <svg class="w-4 h-4 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" clip-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" />
+            </svg>
+          </span>
         </div>
-        <div>
-          <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Localisation</label>
-          <input name="location" [(ngModel)]="formDevice().location" class="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white" />
-        </div>
-        <div>
-          <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Numéro de série</label>
-          <input name="serialNumber" minlength="3" [(ngModel)]="formDevice().serialNumber" #serialModel="ngModel" class="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white" />
-          <div *ngIf="serialModel.invalid && (serialModel.touched || serialModel.dirty)" class="text-sm text-rose-600 mt-1">Le numéro de série doit comporter au moins 3 caractères.</div>
-        </div>
-        <div>
-          <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Date d’achat</label>
-          <div class="relative">
-            <input #purchaseDateInput type="date" name="purchaseDate" [(ngModel)]="formDevice().purchaseDate" class="w-full rounded-xl border border-gray-200 bg-gray-50 pr-10 px-3 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white" />
-            <button type="button" (click)="openDatePicker(purchaseDateInput)" class="absolute right-2 top-2.5 flex h-8 w-8 items-center justify-center rounded-md text-gray-500 hover:bg-gray-100" aria-label="Open date picker">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                <rect x="3" y="4" width="18" height="18" rx="2"></rect>
-                <path d="M16 2v4M8 2v4M3 10h18"></path>
+      </div>
+    </div>
+  </div>
+
+  <!-- Devices Table -->
+  <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden animate-fade-in" style="animation-delay: 200ms;">
+    <div *ngIf="loading()" class="flex justify-center items-center h-64">
+      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+    </div>
+
+    <div *ngIf="error()" class="bg-red-50 border border-red-200 text-red-700 dark:bg-red-900/20 dark:border-red-800 dark:text-red-400 px-4 py-3 rounded m-4">
+      {{ error() }}
+    </div>
+
+    <div *ngIf="!loading() && !error()" class="overflow-hidden">
+      <!-- Desktop Table View -->
+      <div class="hidden lg:block overflow-x-auto">
+        <table class="min-w-full">
+          <thead class="bg-gray-50 dark:bg-gray-900/50">
+            <tr>
+              <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Appareil</th>
+              <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Type</th>
+              <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Service</th>
+              <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Statut</th>
+              <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
+            </tr>
+          </thead>
+          <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-100 dark:divide-gray-700">
+            <tr *ngFor="let device of filteredDevices(); let i = index" class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-all duration-200 cursor-pointer group">
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="flex items-center gap-3">
+                  <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-semibold text-sm">
+                    {{ device.name[0] }}
+                  </div>
+                  <div>
+                    <div class="text-sm font-semibold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{{ device.name }}</div>
+                    <div class="text-xs text-gray-500 dark:text-gray-400">{{ device.serialNumber || 'N/A' }}</div>
+                  </div>
+                </div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm text-gray-600 dark:text-gray-400">{{ device.type }}</div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm text-gray-600 dark:text-gray-400">{{ device.department || 'Non défini' }}</div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <span [ngClass]="['px-3 py-1.5 inline-flex text-xs font-semibold rounded-full border', getStatusClass(device.status)]">
+                  {{ getStatusLabel(device.status) }}
+                </span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                <div class="relative inline-flex items-center gap-2 action-menu-container">
+                  <button type="button" (click)="toggleDeviceActionMenu(device.id, $event)"
+                          class="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-gray-200 text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white transition-all duration-200">
+                    <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                      <circle cx="3" cy="10" r="2" />
+                      <circle cx="10" cy="10" r="2" />
+                      <circle cx="17" cy="10" r="2" />
+                    </svg>
+                  </button>
+
+                  <div *ngIf="openActionMenuId() === device.id" class="fixed z-50 flex min-w-[180px] flex-col gap-1 rounded-xl border border-gray-200 bg-white p-2 shadow-xl dark:border-gray-700 dark:bg-gray-800 backdrop-blur-sm" [style.top.px]="actionMenuPosition()?.top" [style.left.px]="actionMenuPosition()?.left" style="max-height: calc(100vh - 40px); overflow-y: auto;">
+                    <button *ngIf="isIT()" (click)="editDevice(device); closeActionMenu()"
+                            class="w-full rounded-lg px-3 py-2 text-left text-xs font-medium text-gray-600 hover:bg-blue-50 hover:text-blue-600 dark:text-gray-400 dark:hover:bg-blue-900/30 dark:hover:text-blue-400 transition-all duration-200">
+                      Modifier
+                    </button>
+                    <button *ngIf="isIT()" (click)="openAllocate(device); closeActionMenu()"
+                            class="w-full rounded-lg px-3 py-2 text-left text-xs font-medium text-gray-600 hover:bg-sky-50 hover:text-sky-600 dark:text-gray-400 dark:hover:bg-sky-900/30 dark:hover:text-sky-400 transition-all duration-200">
+                      Affecter
+                    </button>
+                    <button (click)="openTicketModal(device); closeActionMenu()"
+                            class="w-full rounded-lg px-3 py-2 text-left text-xs font-medium text-gray-600 hover:bg-blue-50 hover:text-blue-600 dark:text-gray-400 dark:hover:bg-blue-900/30 dark:hover:text-blue-400 transition-all duration-200">
+                      Signaler un problème
+                    </button>
+                    <button (click)="toggleStatus(device.id); closeActionMenu()"
+                            class="w-full rounded-lg px-3 py-2 text-left text-xs font-medium text-gray-600 hover:bg-yellow-50 hover:text-yellow-600 dark:text-gray-400 dark:hover:bg-yellow-900/30 dark:hover:text-yellow-400 transition-all duration-200">
+                      Changer statut
+                    </button>
+                    <button *ngIf="isIT()" (click)="deleteDevice(device.id); closeActionMenu()"
+                            class="w-full rounded-lg px-3 py-2 text-left text-xs font-medium text-gray-600 hover:bg-red-50 hover:text-red-600 dark:text-gray-400 dark:hover:bg-red-900/30 dark:hover:text-red-400 transition-all duration-200">
+                      Supprimer
+                    </button>
+                  </div>
+                </div>
+              </td>
+            </tr>
+            <tr *ngIf="filteredDevices().length === 0">
+              <td colspan="5" class="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
+                <div class="flex flex-col items-center">
+                  <svg class="w-16 h-16 text-gray-300 dark:text-gray-600 mb-4" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                  </svg>
+                  <p class="text-lg font-medium">Aucun appareil trouvé</p>
+                  <p class="text-sm">Essayez d'ajuster vos filtres</p>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination Controls -->
+      <div *ngIf="total() > 0" class="px-6 py-5 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/30">
+        <div class="flex items-center justify-between w-full">
+          <div class="text-sm text-gray-600 dark:text-gray-400">
+            Affichage de {{ (currentPage() - 1) * itemsPerPage + 1 }} à {{ Math.min(currentPage() * itemsPerPage, total()) }} appareil(s)
+          </div>
+          <div class="flex items-center gap-2">
+            <button
+              (click)="goToPage(currentPage() - 1)"
+              [disabled]="currentPage() === 1"
+              class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm transition-all duration-200 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700"
+            >
+              <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" clip-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" />
+              </svg>
+              <span class="hidden sm:inline">Précédent</span>
+            </button>
+
+            <ul class="hidden items-center gap-1 sm:flex">
+              <li *ngFor="let page of pageNumbers()">
+                <button
+                  (click)="goToPage(page)"
+                  class="flex h-10 w-10 items-center justify-center rounded-lg text-sm font-medium transition-all duration-200"
+                  [ngClass]="{
+                    'bg-blue-600 text-white shadow-md shadow-blue-500/30': currentPage() === page,
+                    'text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700': currentPage() !== page
+                  }"
+                >
+                  {{ page }}
+                </button>
+              </li>
+            </ul>
+
+            <button
+              (click)="goToPage(currentPage() + 1)"
+              [disabled]="currentPage() === totalPages"
+              class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm transition-all duration-200 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700"
+            >
+              <span class="hidden sm:inline">Suivant</span>
+              <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" clip-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" />
               </svg>
             </button>
           </div>
         </div>
       </div>
-      <div class="mt-4">
-        <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Photo de l’appareil</label>
-        <div class="flex flex-col gap-3">
-          <div class="flex items-center gap-3">
-            <div class="w-24 h-24 rounded-xl overflow-hidden border bg-gray-50 dark:bg-gray-800">
-              <img *ngIf="photoPreviewUrl()" [src]="photoPreviewUrl()" class="w-full h-full object-cover" alt="Aperçu de la photo" />
-              <div *ngIf="!photoPreviewUrl()" class="flex h-full items-center justify-center text-xs text-gray-500 dark:text-gray-400">Aucune photo</div>
-            </div>
-            <div class="flex-1">
-              <input type="file" accept="image/*" id="devicePhoto" class="hidden" (change)="onModalPhotoSelected($event)" />
-              <label for="devicePhoto" class="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700">Choisir une photo</label>
-              <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">Sélectionnez une image lors de l’ajout ou de la modification.</p>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="mt-5 flex justify-end gap-2">
-        <button type="button" (click)="cancelForm()" class="rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700">Annuler</button>
-        <button type="submit" [disabled]="deviceForm.form.invalid" class="rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:opacity-50">Enregistrer</button>
-      </div>
-    </form>
-  </app-modal>
-
-  <div>
-      <select
-        [ngModel]="typeFilter()"
-        (ngModelChange)="typeFilter.set($event)"
-        class="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
-      >
-        <option value="all">Tous les types</option>
-        <option value="Laptop">Laptop</option>
-        <option value="Desktop">Desktop</option>
-        <option value="Mobile">Mobile</option>
-        <option value="Tablet">Tablet</option>
-        <option value="Printer">Printer</option>
-        <option value="Scanner">Scanner</option>
-        <option value="Monitor">Monitor</option>
-        <option value="Router">Router</option>
-        <option value="Switch">Switch</option>
-        <option value="Access Point">Access Point</option>
-        <option value="Camera">Camera</option>
-        <option value="Projecteur">Projecteur</option>
-      </select>
-    
-  </div>
-
-  <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-    <div
-      *ngFor="let device of filteredDevices()"
-      class="rounded-3xl border border-gray-200 bg-white p-5 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-xl dark:border-gray-800 dark:bg-slate-950"
-    >
-      <div class="flex items-start justify-between gap-4">
-        <div>
-          <h3 class="text-lg font-semibold text-gray-900 dark:text-white">{{ device.name }}</h3>
-          <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ device.type }}</p>
-        </div>
-        <span [class]="'inline-flex rounded-full border px-3 py-1 text-xs font-semibold ' + getStatusClass(device.status)">
-          {{ getStatusLabel(device.status) }}
-        </span>
-      </div>
-
-      <div class="mt-4 overflow-hidden rounded-3xl border border-gray-200 bg-gray-50 shadow-sm dark:border-gray-800 dark:bg-slate-900">
-        <div class="aspect-[4/3] w-full overflow-hidden bg-gray-100 dark:bg-slate-900">
-          <img
-            *ngIf="device.photos && device.photos.length > 0"
-            [src]="device.photos[0]"
-            class="h-full w-full object-cover"
-            alt="Photo de l’appareil"
-          />
-          <div *ngIf="!device.photos || device.photos.length === 0" class="flex h-full items-center justify-center text-sm text-gray-500 dark:text-gray-400">
-            Aucune image disponible
-          </div>
-        </div>
-      </div>
-
-      <div class="mt-5 grid gap-3 text-sm text-gray-600 dark:text-gray-300">
-        <div class="grid grid-cols-2 gap-2 rounded-2xl bg-gray-50 p-3 dark:bg-slate-900">
-          <div class="text-xs font-semibold uppercase tracking-[0.12em] text-gray-500 dark:text-gray-400">Service</div>
-          <div class="text-right font-medium text-gray-900 dark:text-white" [ngClass]="hasNoValue(device.department) ? 'italic text-gray-400 dark:text-slate-500' : ''">{{ hasNoValue(device.department) ? 'Non défini' : device.department }}</div>
-
-          <div class="text-xs font-semibold uppercase tracking-[0.12em] text-gray-500 dark:text-gray-400">Localisation</div>
-          <div class="text-right font-medium text-gray-900 dark:text-white" [ngClass]="hasNoValue(device.location) ? 'italic text-gray-400 dark:text-slate-500' : ''">{{ hasNoValue(device.location) ? 'Non défini' : device.location }}</div>
-
-          <div class="text-xs font-semibold uppercase tracking-[0.12em] text-gray-500 dark:text-gray-400">N° série</div>
-          <div class="text-right font-medium text-gray-900 dark:text-white" [ngClass]="hasNoValue(device.serialNumber) ? 'italic text-gray-400 dark:text-slate-500' : ''">{{ hasNoValue(device.serialNumber) ? 'Non défini' : device.serialNumber }}</div>
-
-          <div class="text-xs font-semibold uppercase tracking-[0.12em] text-gray-500 dark:text-gray-400">Achat</div>
-          <div class="text-right font-medium text-gray-900 dark:text-white" [ngClass]="hasNoValue(device.purchaseDate) ? 'italic text-gray-400 dark:text-slate-500' : ''">{{ hasNoValue(device.purchaseDate) ? 'Non défini' : device.purchaseDate }}</div>
-        </div>
-      </div>
-
-      <div class="mt-5 border-t border-gray-100 pt-4 dark:border-gray-800">
-        <div class="flex items-center justify-between gap-3">
-          <div class="flex flex-wrap gap-2">
-            <button
-              *ngIf="isIT()"
-              type="button"
-              (click)="editDevice(device)"
-              class="rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-100 dark:border-gray-700 dark:bg-slate-900 dark:text-gray-200 dark:hover:bg-slate-800"
-            >
-              Modifier
-            </button>
-            <button
-              *ngIf="isIT()"
-              type="button"
-              (click)="openAllocate(device)"
-              class="rounded-2xl border border-sky-200 bg-sky-50 px-3 py-2 text-sm font-semibold text-sky-700 transition hover:bg-sky-100 dark:border-sky-800 dark:bg-sky-950/30 dark:text-sky-300 dark:hover:bg-sky-900/50"
-            >
-              Affecter
-            </button>
-          </div>
-
-          <div class="relative device-action-menu-container inline-flex items-center">
-            <button
-              type="button"
-              aria-haspopup="true"
-              [attr.aria-expanded]="openActionMenuId() === device.id"
-              (click)="toggleDeviceActionMenu(device.id, $event)"
-              class="inline-flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-600 transition hover:border-gray-300 hover:bg-gray-100 dark:border-gray-700 dark:bg-slate-900 dark:text-gray-300 dark:hover:bg-slate-800"
-              aria-label="Plus d'actions"
-            >
-              <span class="text-lg">⋮</span>
-            </button>
-
-            <div
-              *ngIf="openActionMenuId() === device.id"
-              class="absolute right-0 top-full z-20 mt-2 min-w-[170px] overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-xl dark:border-gray-700 dark:bg-slate-900"
-            >
-              <button
-                type="button"
-                (click)="toggleStatus(device.id); closeActionMenu()"
-                class="w-full px-4 py-3 text-left text-sm text-gray-700 transition hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-slate-800"
-              >
-                Changer statut
-              </button>
-              <button
-                type="button"
-                (click)="deleteDevice(device.id); closeActionMenu()"
-                class="w-full px-4 py-3 text-left text-sm text-rose-600 transition hover:bg-rose-50 dark:hover:bg-rose-950/30 dark:text-rose-400"
-              >
-                Supprimer
-              </button>
-            </div>
-          </div>
-        </div>
-
-      </div>
-    </div>
-  </div>
-
-  <!-- Pagination Controls -->
-  <div *ngIf="total() > 0" class="px-6 py-5 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/30">
-    <div class="flex items-center justify-between w-full">
-      <div class="text-sm text-gray-600 dark:text-gray-400">
-        Affichage de {{ (currentPage() - 1) * itemsPerPage + 1 }} à {{ Math.min(currentPage() * itemsPerPage, total()) }} appareil(s)
-      </div>
-      <div class="flex items-center gap-2">
-        <button
-          (click)="goToPage(currentPage() - 1)"
-          [disabled]="currentPage() === 1"
-          class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm transition-all duration-200 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700"
-        >
-          <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
-            <path fill-rule="evenodd" clip-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" />
-          </svg>
-          <span class="hidden sm:inline">Précédent</span>
-        </button>
-
-        <ul class="hidden items-center gap-1 sm:flex">
-          <li *ngFor="let page of pageNumbers()" >
-            <button
-              (click)="goToPage(page)"
-              class="flex h-10 w-10 items-center justify-center rounded-lg text-sm font-medium transition-all duration-200"
-              [ngClass]="{
-                'bg-blue-600 text-white shadow-md shadow-blue-500/30': currentPage() === page,
-                'text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700': currentPage() !== page
-              }"
-            >
-              {{ page }}
-            </button>
-          </li>
-        </ul>
-
-        <button
-          (click)="goToPage(currentPage() + 1)"
-          [disabled]="currentPage() === totalPages"
-          class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm transition-all duration-200 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700"
-        >
-          <span class="hidden sm:inline">Suivant</span>
-          <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
-            <path fill-rule="evenodd" clip-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" />
-          </svg>
-        </button>
-      </div>
     </div>
   </div>
 </div>
 
-<!-- Allocation Modal (shared modal component) -->
-<app-modal [isOpen]="selectedDeviceForAllocation() !== null" (close)="closeAllocate()" className="max-w-lg mx-4">
-  <div class="p-4">
-    <div class="flex items-center justify-between mb-4">
-      <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Affecter l'appareil</h3>
-    </div>
-    <div class="grid gap-4">
+<!-- Add/Edit Device Modal -->
+<app-modal [isOpen]="showAddForm()" (close)="cancelForm()" className="max-w-2xl mx-4">
+  <form #deviceForm="ngForm" (ngSubmit)="saveDevice()" novalidate class="p-6">
+    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">{{ editingDeviceId() ? 'Modifier l'appareil' : 'Ajouter un nouvel appareil' }}</h3>
+    <div class="grid gap-4 md:grid-cols-2">
       <div>
-        <label class="block text-sm text-gray-700 dark:text-gray-300">Appareil</label>
-        <div class="mt-1 text-sm text-gray-900 dark:text-white">{{ selectedDeviceForAllocation()?.name }}</div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Nom</label>
+        <input
+          type="text"
+          name="name"
+          required
+          minlength="2"
+          [(ngModel)]="formDevice().name"
+          #nameModel="ngModel"
+          class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+          placeholder="Nom de l'appareil"
+        />
+        <div *ngIf="nameModel.invalid && (nameModel.touched || nameModel.dirty)" class="text-sm text-rose-600 mt-1">Le nom est requis (2 caractères min).</div>
       </div>
       <div>
-        <label class="block text-sm text-gray-700 dark:text-gray-300">Consultant</label>
-        <select [ngModel]="selectedConsultantId()" (ngModelChange)="selectedConsultantId.set($event)" class="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900">
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Type</label>
+        <select
+          name="type"
+          required
+          [(ngModel)]="formDevice().type"
+          #typeModel="ngModel"
+          class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+        >
+          <option value="">Sélectionner un type</option>
+          <option value="Laptop">Laptop</option>
+          <option value="Desktop">Desktop</option>
+          <option value="Mobile">Mobile</option>
+          <option value="Tablet">Tablet</option>
+          <option value="Printer">Printer</option>
+          <option value="Scanner">Scanner</option>
+          <option value="Monitor">Monitor</option>
+          <option value="Router">Router</option>
+          <option value="Switch">Switch</option>
+          <option value="Access Point">Access Point</option>
+          <option value="Camera">Camera</option>
+          <option value="Projecteur">Projecteur</option>
+        </select>
+        <div *ngIf="typeModel.invalid && (typeModel.touched || typeModel.dirty)" class="text-sm text-rose-600 mt-1">Le type est requis.</div>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Service / Département</label>
+        <input
+          type="text"
+          name="department"
+          [(ngModel)]="formDevice().department"
+          class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+          placeholder="Département"
+        />
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Statut</label>
+        <select
+          name="status"
+          required
+          [(ngModel)]="formDevice().status"
+          #statusModel="ngModel"
+          class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+        >
+          <option value="available">Disponible</option>
+          <option value="assigned">Assigné</option>
+          <option value="maintenance">Maintenance</option>
+          <option value="retired">Retiré</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Localisation</label>
+        <input
+          type="text"
+          name="location"
+          [(ngModel)]="formDevice().location"
+          class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+          placeholder="Localisation"
+        />
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Numéro de série</label>
+        <input
+          type="text"
+          name="serialNumber"
+          minlength="3"
+          [(ngModel)]="formDevice().serialNumber"
+          #serialModel="ngModel"
+          class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+          placeholder="Numéro de série"
+        />
+        <div *ngIf="serialModel.invalid && (serialModel.touched || serialModel.dirty)" class="text-sm text-rose-600 mt-1">Le numéro de série doit comporter au moins 3 caractères.</div>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Date d'achat</label>
+        <div class="relative">
+          <input
+            #purchaseDateInput
+            type="date"
+            name="purchaseDate"
+            [(ngModel)]="formDevice().purchaseDate"
+            class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+          />
+          <button
+            type="button"
+            (click)="openDatePicker(purchaseDateInput)"
+            class="absolute right-3 top-1/2 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-md text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700"
+            aria-label="Open date picker"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+              <line x1="16" y1="2" x2="16" y2="6"></line>
+              <line x1="8" y1="2" x2="8" y2="6"></line>
+              <line x1="3" y1="10" x2="21" y2="10"></line>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+    <div class="mt-6 flex justify-end gap-2">
+      <button
+        type="button"
+        (click)="cancelForm()"
+        class="px-4 py-2 rounded-xl border border-gray-200 bg-white text-sm font-semibold text-gray-700 hover:bg-gray-100 transition-colors dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
+      >
+        Annuler
+      </button>
+      <button
+        type="submit"
+        [disabled]="deviceForm.invalid"
+        class="px-4 py-2 rounded-xl bg-blue-600 text-sm font-semibold text-white hover:bg-blue-700 transition-colors disabled:opacity-50"
+      >
+        Enregistrer
+      </button>
+    </div>
+  </form>
+</app-modal>
+
+<!-- Allocation Modal -->
+<app-modal [isOpen]="selectedDeviceForAllocation() !== null" (close)="closeAllocate()" className="max-w-lg mx-4">
+  <div class="p-6">
+    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Affecter l'appareil</h3>
+    <div class="grid gap-4">
+      <div>
+        <label class="block text-sm text-gray-700 dark:text-gray-300 mb-2">Appareil</label>
+        <div class="text-sm text-gray-900 dark:text-white">{{ selectedDeviceForAllocation()?.name }}</div>
+      </div>
+      <div>
+        <label class="block text-sm text-gray-700 dark:text-gray-300 mb-2">Consultant</label>
+        <select [ngModel]="selectedConsultantId()" (ngModelChange)="selectedConsultantId.set($event)" class="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900 dark:border-gray-700 dark:bg-gray-800 dark:text-white">
           <option value="">Choisir un consultant</option>
           <option *ngFor="let c of consultants()" [value]="c._id">{{ c.nom }} {{ c.prenom }} ({{ c.email }})</option>
         </select>
@@ -323,6 +456,50 @@
       <div class="flex justify-end gap-2">
         <button type="button" (click)="closeAllocate()" class="rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm">Annuler</button>
         <button type="button" (click)="confirmAllocate()" [disabled]="!selectedConsultantId() || allocateLoading()" class="rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">{{ allocateLoading() ? 'Traitement...' : 'Affecter' }}</button>
+      </div>
+    </div>
+  </div>
+</app-modal>
+
+<!-- Ticket Creation Modal -->
+<app-modal [isOpen]="showTicketModal()" (close)="closeTicketModal()" className="max-w-md mx-4">
+  <div class="p-6">
+    <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Signaler un problème</h2>
+    @if (ticketError()) {
+      <div class="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-950/20 dark:text-red-300">
+        {{ ticketError() }}
+      </div>
+    }
+    <div class="space-y-3">
+      <div>
+        <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Titre</label>
+        <input type="text" [(ngModel)]="ticketForm().title" class="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900 dark:border-gray-700 dark:bg-gray-800 dark:text-white" placeholder="Titre du problème">
+      </div>
+      <div>
+        <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Description</label>
+        <textarea [(ngModel)]="ticketForm().description" rows="2" class="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900 dark:border-gray-700 dark:bg-gray-800 dark:text-white" placeholder="Décrivez le problème"></textarea>
+      </div>
+      <div>
+        <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Type de problème</label>
+        <select [(ngModel)]="ticketForm().issueType" class="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900 dark:border-gray-700 dark:bg-gray-800 dark:text-white">
+          <option value="damaged">Endommagé</option>
+          <option value="destroyed">Détruit</option>
+          <option value="malfunction">Dysfonctionnement</option>
+          <option value="other">Autre</option>
+        </select>
+      </div>
+      <div>
+        <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Priorité</label>
+        <select [(ngModel)]="ticketForm().priority" class="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900 dark:border-gray-700 dark:bg-gray-800 dark:text-white">
+          <option value="low">Faible</option>
+          <option value="medium">Moyenne</option>
+          <option value="high">Haute</option>
+          <option value="urgent">Urgent</option>
+        </select>
+      </div>
+      <div class="flex justify-end gap-2 pt-2">
+        <button type="button" (click)="closeTicketModal()" class="rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700">Annuler</button>
+        <button type="button" (click)="createTicket()" [disabled]="ticketLoading()" class="rounded-xl bg-blue-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:opacity-50">{{ ticketLoading() ? 'Création...' : 'Créer' }}</button>
       </div>
     </div>
   </div>

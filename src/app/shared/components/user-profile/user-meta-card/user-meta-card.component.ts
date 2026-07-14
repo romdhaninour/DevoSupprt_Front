@@ -1,8 +1,9 @@
 import { Component, Input } from '@angular/core';
+import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-user-meta-card',
-  imports: [],
+  imports: [CommonModule],
   templateUrl: './user-meta-card.component.html',
   styles: ``
 })
@@ -17,7 +18,28 @@ export class UserMetaCardComponent {
     const storedProfilePicture = typeof window !== 'undefined'
       ? localStorage.getItem('user_profile_picture') || ''
       : '';
-    return this.user.profilePicture || storedProfilePicture || '/images/user/owner.jpg';
+    const userId = typeof window !== 'undefined'
+      ? localStorage.getItem('user_id') || ''
+      : '';
+
+    // Use backend proxy if we have a userId and profile picture URL
+    if (userId && (this.user.profilePicture || storedProfilePicture)) {
+      const proxyUrl = `http://localhost:3000/users/${userId}/profile-picture`;
+      return proxyUrl;
+    }
+
+    // Return empty string to trigger initials fallback
+    return '';
+  }
+
+  get initials() {
+    const prenom = this.user.prenom || '';
+    const nom = this.user.nom || '';
+    return `${prenom[0] || ''}${nom[0] || ''}`.toUpperCase();
+  }
+
+  handleImageError(event: any) {
+    event.target.src = '/images/user/owner.jpg';
   }
 
   get roleBadgeColors() {
