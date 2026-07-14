@@ -1,7 +1,10 @@
 <div class="relative">
   <button (click)="toggleDropdown()" class="flex items-center text-gray-700 dropdown-toggle dark:text-gray-400">
     <span class="mr-3 overflow-hidden rounded-full h-11 w-11">
-      <img [src]="avatar" alt="User" />
+      <img *ngIf="avatar" [src]="avatar" alt="User" class="w-full h-full object-cover" />
+      <div *ngIf="!avatar" class="w-full h-full rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-lg">
+        {{ initials }}
+      </div>
     </span>
     <span class="block mr-1 font-medium text-theme-sm">{{ displayName }}</span>
     <svg [ngClass]="{

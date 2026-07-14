@@ -7,6 +7,7 @@ import { UserMetaCardComponent } from '../../shared/components/user-profile/user
 import { UserInfoCardComponent } from '../../shared/components/user-profile/user-info-card/user-info-card.component';
 import { ModalComponent } from '../../shared/components/ui/modal/modal.component';
 import { ApiService } from '../../services/api.service';
+import { ImageCompressionUtil } from '../../utils/image-compression.util';
 
 @Component({
   selector: 'app-profile',
@@ -30,6 +31,8 @@ export class ProfileComponent implements OnInit {
   };
   saving = false;
   imageError = false;
+  uploadingProfilePicture = false;
+  selectedProfilePicture: File | null = null;
 
   constructor(private apiService: ApiService) {}
 
@@ -39,7 +42,6 @@ export class ProfileComponent implements OnInit {
 
   loadUserData() {
     const localProfilePicture = localStorage.getItem('user_profile_picture') || '';
-    console.log('loadUserData - current user fetch');
 
     this.apiService.getCurrentUser().subscribe({
       next: (currentUser) => {
@@ -52,7 +54,6 @@ export class ProfileComponent implements OnInit {
           nom: currentUser.nom || '',
           profilePicture: currentUser.profilePicture || localProfilePicture || ''
         };
-        console.log('Loaded current user data from API:', currentUser);
       },
       error: (err) => {
         console.error('Failed to load current user data:', err);
@@ -86,6 +87,57 @@ export class ProfileComponent implements OnInit {
 
   closeEditModal() {
     this.isEditModalOpen = false;
+    this.selectedProfilePicture = null;
+  }
+
+  onProfilePictureSelected(event: Event) {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files[0]) {
+      const file = input.files[0];
+      if (ImageCompressionUtil.isImage(file)) {
+        this.selectedProfilePicture = file;
+        this.imageError = false;
+      } else {
+        this.imageError = true;
+        this.selectedProfilePicture = null;
+      }
+    }
+  }
+
+  async uploadProfilePicture() {
+    if (!this.selectedProfilePicture) return;
+
+    this.uploadingProfilePicture = true;
+
+    try {
+      // Compress image before upload
+      const compressedFile = await ImageCompressionUtil.compressImage(this.selectedProfilePicture, {
+        maxWidth: 512,
+        maxHeight: 512,
+        quality: 0.85,
+        outputFormat: 'image/jpeg',
+      });
+
+      console.log(`Profile picture compressed: ${ImageCompressionUtil.formatFileSize(this.selectedProfilePicture.size)} -> ${ImageCompressionUtil.formatFileSize(compressedFile.size)}`);
+
+      // Convert to base64 for storage (since we're using URL field)
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const base64 = e.target?.result as string;
+        this.editForm.profilePicture = base64;
+        this.uploadingProfilePicture = false;
+        this.selectedProfilePicture = null;
+      };
+      reader.readAsDataURL(compressedFile);
+    } catch (error) {
+      console.error('Profile picture compression failed:', error);
+      this.uploadingProfilePicture = false;
+      alert('Failed to process image. Please try again.');
+    }
+  }
+
+  formatFileSize(bytes: number): string {
+    return ImageCompressionUtil.formatFileSize(bytes);
   }
 
   saveProfile() {

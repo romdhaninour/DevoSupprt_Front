@@ -1,0 +1,479 @@
+<div class="space-y-6">
+  <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+    <div>
+      <h1 class="text-2xl font-semibold text-gray-900 dark:text-white">
+        {{ isMyTicketsView() ? 'Mes tickets' : (isIT() ? 'Tickets' : 'Mes tickets') }}
+      </h1>
+      <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">
+        {{ isMyTicketsView() ? 'Suivez vos demandes et leurs avancées en un seul endroit.' : (isIT() ? 'Gardez un œil sur les demandes à traiter et leurs priorités.' : 'Suivez vos demandes et leurs avancées en un seul endroit.') }}
+      </p>
+    </div>
+    <button
+      type="button"
+      (click)="openCreateModal()"
+      class="inline-flex items-center justify-center rounded-2xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700"
+    >
+      + Signaler un problème
+    </button>
+  </div>
+
+  <div *ngIf="error()" class="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-950/20 dark:text-red-300">
+    {{ error() }}
+  </div>
+
+  <div class="grid gap-5 md:grid-cols-3">
+    <div class="relative overflow-hidden rounded-2xl border border-gray-100 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+      <div class="absolute left-0 top-0 h-full w-1 bg-slate-500"></div>
+      <p class="mb-1 text-sm font-medium text-gray-500 dark:text-gray-400">Total Tickets</p>
+      <p class="text-3xl font-bold text-gray-900 dark:text-white">{{ tickets().length }}</p>
+    </div>
+    <div *ngIf="isIT() && !isMyTicketsView()" class="relative overflow-hidden rounded-2xl border border-gray-100 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+      <div class="absolute left-0 top-0 h-full w-1 bg-emerald-500"></div>
+      <p class="mb-1 text-sm font-medium text-gray-500 dark:text-gray-400">Tickets Ouverts</p>
+      <p class="text-3xl font-bold text-emerald-600 dark:text-emerald-400">{{ openTickets() }}</p>
+    </div>
+    <div *ngIf="isIT() && !isMyTicketsView()" class="relative overflow-hidden rounded-2xl border border-gray-100 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+      <div class="absolute left-0 top-0 h-full w-1 bg-rose-500"></div>
+      <p class="mb-1 text-sm font-medium text-gray-500 dark:text-gray-400">Tickets Urgents</p>
+      <p class="text-3xl font-bold text-rose-600 dark:text-rose-400">{{ urgentTickets() }}</p>
+    </div>
+    <div *ngIf="!isIT() || isMyTicketsView()" class="relative overflow-hidden rounded-2xl border border-gray-100 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+      <div class="absolute left-0 top-0 h-full w-1 bg-sky-500"></div>
+      <p class="mb-1 text-sm font-medium text-gray-500 dark:text-gray-400">En Cours</p>
+      <p class="text-3xl font-bold text-sky-600 dark:text-sky-400">{{ inProgressTickets() }}</p>
+    </div>
+    <div *ngIf="!isIT() || isMyTicketsView()" class="relative overflow-hidden rounded-2xl border border-gray-100 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+      <div class="absolute left-0 top-0 h-full w-1 bg-violet-500"></div>
+      <p class="mb-1 text-sm font-medium text-gray-500 dark:text-gray-400">Résolus</p>
+      <p class="text-3xl font-bold text-violet-600 dark:text-violet-400">{{ resolvedTickets() }}</p>
+    </div>
+  </div>
+
+  <div class="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+    <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+      <div *ngIf="isIT() && !isMyTicketsView()" class="flex flex-wrap items-center gap-3">
+        <div class="relative min-w-[180px]">
+          <select
+            [(ngModel)]="statusFilter"
+            (ngModelChange)="onFilterChange()"
+            class="w-full appearance-none rounded-xl border border-gray-200 bg-gray-50 py-3 pl-4 pr-10 text-sm text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
+          >
+            <option value="all">Tous les statuts</option>
+            <option value="open">Ouvert</option>
+            <option value="in_progress">En cours</option>
+            <option value="resolved">Résolu</option>
+            <option value="closed">Fermé</option>
+          </select>
+          <span class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+            <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" clip-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" /></svg>
+          </span>
+        </div>
+        <div class="relative min-w-[180px]">
+          <select
+            [(ngModel)]="priorityFilter"
+            (ngModelChange)="onFilterChange()"
+            class="w-full appearance-none rounded-xl border border-gray-200 bg-gray-50 py-3 pl-4 pr-10 text-sm text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
+          >
+            <option value="all">Toutes les priorités</option>
+            <option value="low">Faible</option>
+            <option value="medium">Moyen</option>
+            <option value="high">Élevé</option>
+            <option value="urgent">Urgent</option>
+          </select>
+          <span class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+            <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" clip-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" /></svg>
+          </span>
+        </div>
+        <div class="relative min-w-[180px]">
+          <select
+            [(ngModel)]="issueTypeFilter"
+            (ngModelChange)="onFilterChange()"
+            class="w-full appearance-none rounded-xl border border-gray-200 bg-gray-50 py-3 pl-4 pr-10 text-sm text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
+          >
+            <option value="all">Tous les types</option>
+            <option value="damaged">Endommagé</option>
+            <option value="destroyed">Détruit</option>
+            <option value="malfunction">Dysfonctionnement</option>
+            <option value="other">Autre</option>
+          </select>
+          <span class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+            <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" clip-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" /></svg>
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="loading()" class="flex items-center justify-center py-16">
+    <div class="h-12 w-12 animate-spin rounded-full border-b-2 border-blue-600"></div>
+  </div>
+
+  <div *ngIf="!loading() && tickets().length === 0" class="rounded-2xl border border-dashed border-gray-300 bg-white p-12 text-center shadow-sm dark:border-gray-700 dark:bg-gray-900">
+    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Aucun ticket pour l’instant</h3>
+    <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+      {{ isMyTicketsView() ? 'Vous n\'avez pas encore de tickets' : (isIT() ? 'Aucun ticket de support enregistré' : 'Vous n\'avez pas encore de tickets') }}
+    </p>
+  </div>
+
+  <div *ngIf="!loading() && tickets().length > 0" class="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
+    <div class="hidden overflow-x-auto lg:block">
+      <table class="min-w-full">
+        <thead class="bg-gray-50 dark:bg-gray-900/50">
+          <tr>
+            <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Ticket</th>
+            <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Appareil</th>
+            <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Priorité</th>
+            <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Statut</th>
+            <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Assigné à</th>
+            <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Créé le</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100 bg-white dark:divide-gray-700 dark:bg-gray-800">
+          <tr *ngFor="let ticket of paginatedTickets()" (click)="openTicketDetail(ticket)" class="cursor-pointer transition-all duration-200 hover:bg-blue-50/70 dark:hover:bg-gray-700/70">
+            <td class="px-6 py-4">
+              <div class="min-w-0">
+                <div class="truncate text-sm font-semibold text-gray-900 dark:text-white">{{ ticket.title }}</div>
+                <div class="mt-1 truncate text-sm text-gray-500 dark:text-gray-400">{{ ticket.description }}</div>
+              </div>
+            </td>
+            <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">{{ ticket.device?.name || 'N/A' }}</td>
+            <td class="px-6 py-4">
+              <span [class]="'inline-flex rounded-full border px-3 py-1 text-xs font-semibold ' + getPriorityClass(ticket.priority)">{{ getPriorityLabel(ticket.priority) }}</span>
+            </td>
+            <td class="px-6 py-4">
+              <span [class]="'inline-flex rounded-full border px-3 py-1 text-xs font-semibold ' + getStatusClass(ticket.status)">{{ getStatusLabel(ticket.status) }}</span>
+            </td>
+            <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">
+              <span *ngIf="ticket.assignedTo; else unassignedState">{{ ticket.assignedTo.prenom + ' ' + ticket.assignedTo.nom }}</span>
+              <ng-template #unassignedState>
+                <span class="italic text-gray-400 dark:text-gray-500">Non assigné</span>
+              </ng-template>
+            </td>
+            <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">{{ formatDate(ticket.createdAt) }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="space-y-3 p-4 lg:hidden">
+      <div *ngFor="let ticket of paginatedTickets()" (click)="openTicketDetail(ticket)" class="cursor-pointer rounded-2xl border border-gray-200 bg-gray-50 p-4 shadow-sm transition hover:bg-blue-50/70 dark:border-gray-700 dark:bg-gray-800/70 dark:hover:bg-gray-700/70">
+        <div class="flex items-center justify-between gap-3">
+          <div class="min-w-0">
+            <div class="truncate text-sm font-semibold text-gray-900 dark:text-white">{{ ticket.title }}</div>
+            <div class="mt-1 truncate text-sm text-gray-500 dark:text-gray-400">{{ ticket.device?.name || 'N/A' }}</div>
+          </div>
+          <span [class]="'inline-flex rounded-full border px-3 py-1 text-xs font-semibold ' + getPriorityClass(ticket.priority)">{{ getPriorityLabel(ticket.priority) }}</span>
+        </div>
+        <div class="mt-3 flex flex-wrap gap-2">
+          <span [class]="'inline-flex rounded-full border px-3 py-1 text-xs font-semibold ' + getStatusClass(ticket.status)">{{ getStatusLabel(ticket.status) }}</span>
+          <span class="rounded-full border border-gray-200 bg-white px-3 py-1 text-xs text-gray-600 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300">
+            {{ ticket.assignedTo ? (ticket.assignedTo.prenom + ' ' + ticket.assignedTo.nom) : 'Non assigné' }}
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="totalPages() > 1" class="border-t border-gray-100 bg-gray-50 px-6 py-5 dark:border-gray-700 dark:bg-gray-900/30">
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div class="text-sm text-gray-600 dark:text-gray-400">
+        Affichage de {{ (currentPage() - 1) * itemsPerPage + 1 }} à {{ getDisplayRangeEnd() }} ticket(s)
+      </div>
+      <div class="flex items-center gap-2">
+        <button
+          (click)="goToPage(currentPage() - 1)"
+          [disabled]="currentPage() === 1"
+          class="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+        >
+          <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" clip-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" />
+          </svg>
+          <span class="hidden sm:inline">Précédent</span>
+        </button>
+
+        <ul class="hidden items-center gap-1 sm:flex">
+          <li *ngFor="let page of pageNumbers()">
+            <button
+              (click)="goToPage(page)"
+              class="flex h-10 w-10 items-center justify-center rounded-lg text-sm font-medium transition-all duration-200"
+              [ngClass]="{
+                'bg-blue-600 text-white shadow-md shadow-blue-500/30': currentPage() === page,
+                'text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700': currentPage() !== page
+              }"
+            >
+              {{ page }}
+            </button>
+          </li>
+        </ul>
+
+        <button
+          (click)="goToPage(currentPage() + 1)"
+          [disabled]="currentPage() === totalPages()"
+          class="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+        >
+          <span class="hidden sm:inline">Suivant</span>
+          <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" clip-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" />
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <app-modal [isOpen]="showCreateModal()" (close)="closeCreateModal()" className="max-w-2xl mx-4">
+    <div class="p-4 sm:p-6">
+      <div class="mb-5 flex items-start justify-between gap-3">
+        <div>
+          <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Signaler un problème</h2>
+          <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Décrivez ce qui ne va pas pour que l’équipe puisse agir rapidement.</p>
+        </div>
+      </div>
+      <div *ngIf="createError()" class="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-950/20 dark:text-red-300">
+        {{ createError() }}
+      </div>
+      <div class="space-y-4">
+        <div class="grid gap-4 md:grid-cols-2">
+          <div>
+            <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Titre</label>
+            <input
+              [ngModel]="createForm().title"
+              (ngModelChange)="createForm.update(f => ({ ...f, title: $event }))"
+              class="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+              placeholder="Ex: Écran cassé"
+            />
+          </div>
+          <div>
+            <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Appareil</label>
+            <select
+              [ngModel]="createForm().deviceId"
+              (ngModelChange)="createForm.update(f => ({ ...f, deviceId: $event }))"
+              class="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+            >
+              <option value="">Choisir un appareil</option>
+              <option *ngFor="let device of devices()" [value]="device.id">{{ device.name }} ({{ device.type }})</option>
+            </select>
+          </div>
+        </div>
+        <div class="grid gap-4 md:grid-cols-2">
+          <div>
+            <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Type de problème</label>
+            <select
+              [ngModel]="createForm().issueType"
+              (ngModelChange)="createForm.update(f => ({ ...f, issueType: $event }))"
+              class="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+            >
+              <option [value]="IssueType.DAMAGED">Endommagé</option>
+              <option [value]="IssueType.DESTROYED">Détruit</option>
+              <option [value]="IssueType.MALFUNCTION">Dysfonctionnement</option>
+              <option [value]="IssueType.OTHER">Autre</option>
+            </select>
+          </div>
+          <div>
+            <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Priorité</label>
+            <select
+              [ngModel]="createForm().priority"
+              (ngModelChange)="createForm.update(f => ({ ...f, priority: $event }))"
+              class="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+            >
+              <option [value]="TicketPriority.LOW">Faible</option>
+              <option [value]="TicketPriority.MEDIUM">Moyen</option>
+              <option [value]="TicketPriority.HIGH">Élevé</option>
+              <option [value]="TicketPriority.URGENT">Urgent</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Description</label>
+          <textarea
+            [ngModel]="createForm().description"
+            (ngModelChange)="createForm.update(f => ({ ...f, description: $event }))"
+            rows="4"
+            class="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+            placeholder="Décrivez le problème en détail..."
+          ></textarea>
+        </div>
+        <div class="flex justify-end gap-2 border-t border-gray-200 pt-4 dark:border-gray-700">
+          <button
+            type="button"
+            (click)="closeCreateModal()"
+            class="rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
+          >
+            Annuler
+          </button>
+          <button
+            type="button"
+            (click)="createTicket()"
+            [disabled]="createLoading()"
+            class="rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:opacity-50"
+          >
+            {{ createLoading() ? 'Création...' : 'Créer le ticket' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </app-modal>
+
+  <app-modal [isOpen]="showDetailModal()" (close)="closeDetailModal()" className="max-w-4xl mx-4" [showCloseButton]="false">
+    <div class="relative" *ngIf="selectedTicket() as ticket">
+      <div class="sticky top-0 z-20 flex justify-end border-b border-gray-200 bg-white/90 px-4 py-3 backdrop-blur dark:border-gray-800 dark:bg-gray-900/90">
+        <button
+          type="button"
+          (click)="closeDetailModal()"
+          class="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 text-gray-500 shadow-sm transition hover:bg-gray-200 hover:text-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white"
+          aria-label="Fermer"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path fill-rule="evenodd" clip-rule="evenodd" d="M6.04289 16.5413C5.65237 16.9318 5.65237 17.565 6.04289 17.9555C6.43342 18.346 7.06658 18.346 7.45711 17.9555L11.9987 13.4139L16.5408 17.956C16.9313 18.3466 17.5645 18.3466 17.955 17.956C18.3455 17.5655 18.3455 16.9323 17.955 16.5418L13.4129 11.9997L17.955 7.4576C18.3455 7.06707 18.3455 6.43391 17.955 6.04338C17.5645 5.65286 16.9313 5.65286 16.5408 6.04338L11.9987 10.5855L7.45711 6.0439C7.06658 5.65338 6.43342 5.65338 6.04289 6.0439C5.65237 6.43442 5.65237 7.06759 6.04289 7.45811L10.5845 11.9997L6.04289 16.5413Z" fill="currentColor" />
+          </svg>
+        </button>
+      </div>
+      <div class="max-h-[calc(100vh-8rem)] overflow-y-auto">
+        <div class="border-b border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900">
+          <div class="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <div class="flex flex-wrap items-center gap-2">
+                <span [class]="'inline-flex rounded-full border px-3 py-1 text-xs font-semibold ' + getStatusClass(ticket.status)">
+                  {{ getStatusLabel(ticket.status) }}
+                </span>
+                <span [class]="'inline-flex rounded-full border px-3 py-1 text-xs font-semibold ' + getPriorityClass(ticket.priority)">
+                  {{ getPriorityLabel(ticket.priority) }}
+                </span>
+              </div>
+              <h2 class="mt-3 text-xl font-semibold text-gray-900 dark:text-white">{{ ticket.title }}</h2>
+              <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">{{ ticket.description }}</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="space-y-6 p-6">
+          <div class="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+            <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+              <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Informations clés</h3>
+              <div class="mt-4 grid gap-3 sm:grid-cols-2">
+                <div class="rounded-2xl bg-gray-50 p-3 dark:bg-gray-800/60">
+                  <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Statut</p>
+                  <p class="mt-1 text-sm font-medium text-gray-900 dark:text-white">{{ getStatusLabel(ticket.status) }}</p>
+                </div>
+                <div class="rounded-2xl bg-gray-50 p-3 dark:bg-gray-800/60">
+                  <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Priorité</p>
+                  <p class="mt-1 text-sm font-medium text-gray-900 dark:text-white">{{ getPriorityLabel(ticket.priority) }}</p>
+                </div>
+                <div class="rounded-2xl bg-gray-50 p-3 dark:bg-gray-800/60">
+                  <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Type</p>
+                  <p class="mt-1 text-sm font-medium text-gray-900 dark:text-white">{{ getIssueTypeLabel(ticket.issueType) }}</p>
+                </div>
+                <div class="rounded-2xl bg-gray-50 p-3 dark:bg-gray-800/60">
+                  <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Appareil</p>
+                  <p class="mt-1 text-sm font-medium text-gray-900 dark:text-white">{{ ticket.device?.name || 'N/A' }}</p>
+                </div>
+                <div class="rounded-2xl bg-gray-50 p-3 dark:bg-gray-800/60">
+                  <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Créé par</p>
+                  <p class="mt-1 text-sm font-medium text-gray-900 dark:text-white">{{ ticket.createdBy?.prenom }} {{ ticket.createdBy?.nom }}</p>
+                </div>
+                <div class="rounded-2xl bg-gray-50 p-3 dark:bg-gray-800/60">
+                  <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Créé le</p>
+                  <p class="mt-1 text-sm font-medium text-gray-900 dark:text-white">{{ formatDate(ticket.createdAt) }}</p>
+                </div>
+              </div>
+              <div *ngIf="ticket.resolution || ticket.resolvedAt" class="mt-4 space-y-2">
+                <div *ngIf="ticket.resolution" class="rounded-2xl bg-emerald-50 p-3 text-sm text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300">
+                  Résolution : {{ getResolutionLabel(ticket.resolution) }}
+                </div>
+                <div *ngIf="ticket.resolvedAt" class="rounded-2xl bg-emerald-50 p-3 text-sm text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300">
+                  Résolu le : {{ formatDate(ticket.resolvedAt) }}
+                </div>
+              </div>
+            </div>
+
+            <div class="space-y-4">
+              <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+                <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Suivi &amp; gestion</h3>
+                <div class="mt-4 grid gap-3 sm:grid-cols-2">
+                  <div class="rounded-2xl bg-gray-50 p-3 dark:bg-gray-800/60">
+                    <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Dernière mise à jour</p>
+                    <p class="mt-1 text-sm font-medium text-gray-900 dark:text-white">{{ formatDate(ticket.updatedAt || ticket.createdAt) }}</p>
+                  </div>
+                  <div class="rounded-2xl bg-gray-50 p-3 dark:bg-gray-800/60">
+                    <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Prochaine action</p>
+                    <p class="mt-1 text-sm font-medium text-gray-900 dark:text-white">
+                      {{ ticket.assignedTo ? 'Le ticket est déjà pris en charge par l’équipe IT.' : 'Le ticket attend une prise en charge par l’équipe IT.' }}
+                    </p>
+                  </div>
+                </div>
+                <div *ngIf="isIT()" class="mt-5 space-y-4 border-t border-gray-200 pt-5 dark:border-gray-800">
+                  <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Gérer ce ticket</h3>
+                  <div>
+                    <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Changer le statut</label>
+                    <div *ngIf="statusLoading()" class="text-sm text-gray-500 dark:text-gray-400">Mise à jour...</div>
+                    <div *ngIf="!statusLoading()" class="flex flex-wrap gap-2">
+                      <button (click)="updateTicketStatus(TicketStatus.OPEN)" class="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700 dark:border-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300">Nouveau</button>
+                      <button (click)="updateTicketStatus(TicketStatus.IN_PROGRESS)" class="rounded-xl border border-sky-200 bg-sky-50 px-3 py-2 text-sm font-medium text-sky-700 dark:border-sky-800 dark:bg-sky-900/30 dark:text-sky-300">En cours</button>
+                      <button (click)="showResolutionChoice.set(true)" class="rounded-xl border border-violet-200 bg-violet-50 px-3 py-2 text-sm font-medium text-violet-700 dark:border-violet-800 dark:bg-violet-900/30 dark:text-violet-300">Résolu</button>
+                    </div>
+                    <div *ngIf="showResolutionChoice()" class="mt-3 rounded-xl border border-violet-200 bg-violet-50 p-3 dark:border-violet-800 dark:bg-violet-900/20">
+                      <p class="mb-2 text-sm font-medium text-gray-900 dark:text-white">Comment a-t-il été résolu ?</p>
+                      <div class="flex flex-wrap gap-2">
+                        <button (click)="updateTicketStatus(TicketStatus.RESOLVED, ResolutionType.REPAIR); showResolutionChoice.set(false)" class="rounded-xl border border-violet-300 bg-white px-3 py-2 text-sm text-violet-700 dark:border-violet-700 dark:bg-gray-800 dark:text-violet-300">Réparé</button>
+                        <button (click)="updateTicketStatus(TicketStatus.RESOLVED, ResolutionType.REPLACE); showResolutionChoice.set(false)" class="rounded-xl border border-violet-300 bg-white px-3 py-2 text-sm text-violet-700 dark:border-violet-700 dark:bg-gray-800 dark:text-violet-300">Remplacé</button>
+                      </div>
+                    </div>
+                  </div>
+                  <div>
+                    <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Assigner à</label>
+                    <select (change)="onAssignChange($event)" [disabled]="assignLoading()" class="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white">
+                      <option value="">Non assigné</option>
+                      <option *ngFor="let staff of itStaff()" [value]="staff._id" [selected]="selectedTicket()?.assignedTo?._id === staff._id">
+                        {{ getStaffDisplayName(staff) }}
+                      </option>
+                    </select>
+                  </div>
+                  <button (click)="deleteTicket()" [disabled]="deleteLoading()" class="w-full rounded-xl border border-red-200 bg-red-50 px-3 py-2.5 text-sm font-medium text-red-700 transition hover:bg-red-100 dark:border-red-800 dark:bg-red-900/30 dark:text-red-300 dark:hover:bg-red-900/50">
+                    {{ deleteLoading() ? 'Suppression...' : 'Supprimer ce ticket' }}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+            <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Commentaires</h3>
+            <div class="mt-4 space-y-3 rounded-2xl bg-gray-50 p-4 dark:bg-gray-800/60">
+              <div *ngFor="let comment of ticket.comments" class="flex gap-3">
+                <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-blue-600 text-sm font-semibold text-white">
+                  {{ comment.author?.prenom?.charAt(0) || '?' }}{{ comment.author?.nom?.charAt(0) || '' }}
+                </div>
+                <div class="flex-1 rounded-2xl bg-white p-3 shadow-sm dark:bg-gray-800">
+                  <div class="mb-2 flex items-center justify-between gap-2">
+                    <span class="text-sm font-medium text-gray-900 dark:text-white">{{ comment.author?.prenom }} {{ comment.author?.nom }}</span>
+                    <span class="text-xs text-gray-500 dark:text-gray-400">{{ formatDate(comment.createdAt) }}</span>
+                  </div>
+                  <p class="text-sm text-gray-700 dark:text-gray-300">{{ comment.text }}</p>
+                </div>
+              </div>
+              <div *ngIf="ticket.comments?.length === 0" class="py-6 text-center text-sm text-gray-500 dark:text-gray-400">
+                Aucun commentaire pour le moment
+              </div>
+            </div>
+            <div class="mt-4 flex gap-2">
+              <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-gray-500 to-gray-600 text-sm font-semibold text-white">
+                {{ getCurrentUserInitials() }}
+              </div>
+              <input
+                [ngModel]="newComment()"
+                (ngModelChange)="newComment.set($event)"
+                type="text"
+                placeholder="Ajouter un commentaire..."
+                class="flex-1 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                (keyup.enter)="addComment()"
+                [disabled]="commentLoading()"
+              />
+              <button (click)="addComment()" [disabled]="commentLoading() || !newComment().trim()" class="rounded-xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:opacity-50">
+                {{ commentLoading() ? '...' : 'Envoyer' }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </app-modal>
+</div>

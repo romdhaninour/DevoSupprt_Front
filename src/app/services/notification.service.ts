@@ -1,79 +1,141 @@
-import { Injectable } from '@angular/core';
-import { BehaviorSubject } from 'rxjs';
+import { Injectable, signal, computed } from '@angular/core';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { io, Socket } from 'socket.io-client';
 
 export interface Notification {
-  id: string;
+  _id: string;
   message: string;
   timestamp: Date;
   read: boolean;
-  type: 'user_signup' | 'activation' | 'other';
+  type: string;
+  userEmail: string;
+  userName?: string;
+  recipientRoles: string[];
+  createdAt: string;
+  updatedAt: string;
 }
 
 @Injectable({
   providedIn: 'root'
 })
 export class NotificationService {
-  private notifications = new BehaviorSubject<Notification[]>([]);
-  notifications$ = this.notifications.asObservable();
+  private apiUrl = 'http://localhost:3000';
+  private socket: Socket | null = null;
 
-  constructor() {
+  private notificationsSignal = signal<Notification[]>([]);
+  private loadingSignal = signal<boolean>(false);
+
+  readonly notifications = this.notificationsSignal.asReadonly();
+  readonly loading = this.loadingSignal.asReadonly();
+
+  readonly unreadCount = computed(() =>
+    this.notificationsSignal().filter(n => !n.read).length
+  );
+
+  readonly hasUnread = computed(() => this.unreadCount() > 0);
+
+  constructor(private http: HttpClient) {
     this.loadNotifications();
+    this.connectSocket();
   }
 
-  private loadNotifications() {
-    const stored = localStorage.getItem('notifications');
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored);
-        this.notifications.next(parsed.map((n: any) => ({
-          ...n,
-          timestamp: new Date(n.timestamp)
-        })));
-      } catch (e) {
-        this.notifications.next([]);
-      }
+  private getAuthHeaders(): { headers: HttpHeaders } {
+    let headers = new HttpHeaders();
+    const token = localStorage.getItem('auth_token');
+    if (token) {
+      headers = headers.set('Authorization', `Bearer ${token}`);
+    }
+    return { headers };
+  }
+
+  private connectSocket() {
+    const token = localStorage.getItem('auth_token');
+    if (!token) return;
+
+    this.socket = io(`${this.apiUrl}/notifications`, {
+      auth: { token },
+      transports: ['websocket', 'polling'],
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
+    });
+
+    this.socket.on('connect', () => {
+      console.log('Connected to notification server');
+    });
+
+    this.socket.on('disconnect', () => {
+      console.log('Disconnected from notification server');
+    });
+
+    this.socket.on('new_notification', (notification: Notification) => {
+      this.notificationsSignal.update(current => [
+        { ...notification, timestamp: new Date(notification.createdAt) },
+        ...current
+      ]);
+    });
+  }
+
+  disconnectSocket() {
+    if (this.socket) {
+      this.socket.disconnect();
+      this.socket = null;
     }
   }
 
-  private saveNotifications() {
-    localStorage.setItem('notifications', JSON.stringify(this.notifications.value));
-  }
-
-  addNotification(message: string, type: 'user_signup' | 'activation' | 'other' = 'other') {
-    const notification: Notification = {
-      id: Date.now().toString(),
-      message,
-      timestamp: new Date(),
-      read: false,
-      type
-    };
-    const current = this.notifications.value;
-    this.notifications.next([notification, ...current]);
-    this.saveNotifications();
+  loadNotifications() {
+    this.loadingSignal.set(true);
+    this.http.get<Notification[]>(`${this.apiUrl}/notifications`, this.getAuthHeaders())
+      .subscribe({
+        next: (notifications) => {
+          this.notificationsSignal.set(
+            notifications.map(n => ({
+              ...n,
+              timestamp: new Date(n.createdAt)
+            }))
+          );
+          this.loadingSignal.set(false);
+        },
+        error: (error) => {
+          console.error('Failed to load notifications:', error);
+          this.loadingSignal.set(false);
+        }
+      });
   }
 
   markAsRead(id: string) {
-    const current = this.notifications.value;
-    const updated = current.map(n => 
-      n.id === id ? { ...n, read: true } : n
-    );
-    this.notifications.next(updated);
-    this.saveNotifications();
+    this.http.patch<Notification>(`${this.apiUrl}/notifications/${id}/read`, {}, this.getAuthHeaders())
+      .subscribe({
+        next: (updated) => {
+          this.notificationsSignal.update(current =>
+            current.map(n => n._id === id ? { ...n, read: true } : n)
+          );
+        },
+        error: (error) => {
+          console.error('Failed to mark notification as read:', error);
+        }
+      });
   }
 
   markAllAsRead() {
-    const current = this.notifications.value;
-    const updated = current.map(n => ({ ...n, read: true }));
-    this.notifications.next(updated);
-    this.saveNotifications();
+    this.http.patch(`${this.apiUrl}/notifications/read-all`, {}, this.getAuthHeaders())
+      .subscribe({
+        next: () => {
+          this.notificationsSignal.update(current =>
+            current.map(n => ({ ...n, read: true }))
+          );
+        },
+        error: (error) => {
+          console.error('Failed to mark all notifications as read:', error);
+        }
+      });
   }
 
   clearNotifications() {
-    this.notifications.next([]);
-    this.saveNotifications();
+    this.notificationsSignal.set([]);
   }
 
-  get unreadCount(): number {
-    return this.notifications.value.filter(n => !n.read).length;
+  refreshNotifications() {
+    this.loadNotifications();
   }
 }

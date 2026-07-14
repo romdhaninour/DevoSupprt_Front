@@ -1,0 +1,194 @@
+<div class="flex h-[calc(100vh-100px)] gap-4">
+  <!-- Conversations Sidebar -->
+  <div class="w-80 rounded-3xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900 flex flex-col">
+    <div class="border-b border-gray-200 p-4 dark:border-gray-800 flex items-center justify-between">
+      <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Conversations</h2>
+      <button
+        (click)="openNewConversation()"
+        class="rounded-xl bg-sky-500 p-2 text-white hover:bg-sky-600 transition"
+        title="Nouvelle conversation">
+        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+        </svg>
+      </button>
+    </div>
+    
+    <div class="flex-1 overflow-y-auto p-2">
+      <div *ngIf="loading()" class="flex items-center justify-center py-8">
+        <div class="h-6 w-6 animate-spin rounded-full border-2 border-sky-500 border-t-transparent"></div>
+      </div>
+      
+      <div *ngIf="!loading() && conversations().length === 0" class="text-center py-8 text-sm text-gray-500 dark:text-gray-400">
+        Aucune conversation
+      </div>
+      
+      <div *ngFor="let conversation of conversations()" 
+           (click)="selectConversation(conversation)"
+           [class]="conversation === selectedConversation() ? 'bg-sky-50 dark:bg-sky-900/20' : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'"
+           class="cursor-pointer rounded-2xl p-3 transition mb-2">
+        <div class="flex items-center gap-3">
+          <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-sky-400 to-blue-500 text-white font-semibold">
+            {{ getPartnerInitials(conversation) }}
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center justify-between">
+              <span class="font-medium text-gray-900 dark:text-white truncate">{{ getPartnerName(conversation) }}</span>
+              <span *ngIf="conversation.unreadCount > 0" class="ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-sky-500 text-xs font-medium text-white">
+                {{ conversation.unreadCount }}
+              </span>
+            </div>
+            <p class="mt-1 truncate text-xs text-gray-500 dark:text-gray-400">
+              {{ conversation.lastMessage.message }}
+            </p>
+            <span class="mt-1 text-xs text-gray-400 dark:text-gray-500">{{ formatTime(conversation.lastMessage.createdAt) }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Chat Area -->
+  <div class="flex-1 rounded-3xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900 flex flex-col">
+    <div *ngIf="!selectedConversation()" class="flex-1 flex items-center justify-center">
+      <div class="text-center">
+        <div class="mb-4 text-6xl">💬</div>
+        <p class="text-gray-500 dark:text-gray-400">Sélectionnez une conversation ou commencez une nouvelle conversation</p>
+      </div>
+    </div>
+
+    <div *ngIf="selectedConversation()" class="flex flex-col h-full">
+      <!-- Chat Header -->
+      <div class="border-b border-gray-200 p-4 dark:border-gray-800">
+        <div class="flex items-center gap-3">
+          <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-sky-400 to-blue-500 text-white font-semibold">
+            {{ getPartnerInitials(selectedConversation()!) }}
+          </div>
+          <div>
+            <h3 class="font-semibold text-gray-900 dark:text-white">{{ getPartnerName(selectedConversation()!) }}</h3>
+            <p *ngIf="isTyping()" class="text-xs text-sky-500">En train d'écrire...</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Messages -->
+      <div class="flex-1 overflow-y-auto p-4 space-y-3">
+        <div *ngIf="loading()" class="flex items-center justify-center py-8">
+          <div class="h-6 w-6 animate-spin rounded-full border-2 border-sky-500 border-t-transparent"></div>
+        </div>
+        
+        <div *ngIf="!loading() && messages().length === 0" class="text-center py-8 text-sm text-gray-500 dark:text-gray-400">
+          Aucun message. Commencez la conversation !
+        </div>
+
+        <div *ngFor="let message of messages()" 
+             [class]="isMessageFromMe(message) ? 'justify-end' : 'justify-start'"
+             class="flex">
+          <div [class]="isMessageFromMe(message) 
+                ? 'bg-sky-500 text-white rounded-2xl rounded-br-md' 
+                : 'bg-gray-100 text-gray-900 dark:bg-gray-800 dark:text-white rounded-2xl rounded-bl-md'"
+               class="max-w-[70%] px-4 py-2">
+            <p class="text-sm">{{ message.message }}</p>
+            <div class="mt-1 flex items-center gap-1">
+              <span class="text-xs opacity-70">{{ formatTime(message.createdAt) }}</span>
+              <span *ngIf="isMessageFromMe(message) && message.read" class="text-xs opacity-70">✓✓</span>
+              <span *ngIf="isMessageFromMe(message) && !message.read" class="text-xs opacity-70">✓</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Message Input -->
+      <div class="border-t border-gray-200 p-4 dark:border-gray-800">
+        <div class="flex gap-2">
+          <input
+            [(ngModel)]="newMessage"
+            (input)="onTyping()"
+            (keyup.enter)="sendMessage()"
+            type="text"
+            placeholder="Écrivez votre message..."
+            class="flex-1 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+          />
+          <button
+            (click)="sendMessage()"
+            [disabled]="!newMessage().trim()"
+            class="rounded-2xl bg-sky-500 px-6 py-3 text-sm font-medium text-white hover:bg-sky-600 disabled:opacity-50 disabled:hover:bg-sky-500 transition">
+            Envoyer
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- New Conversation Modal -->
+  <div *ngIf="showNewConversation()" 
+       class="fixed inset-0 z-[99999] flex items-center justify-center bg-black/50 backdrop-blur-sm"
+       (click)="closeNewConversation()">
+    <div class="w-full max-w-md rounded-3xl border border-gray-200 bg-white p-6 shadow-xl dark:border-gray-800 dark:bg-gray-900 relative z-[100000]"
+         (click)="$event.stopPropagation()">
+      <div class="mb-4 flex items-center justify-between">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Nouvelle conversation</h3>
+        <button
+          (click)="closeNewConversation()"
+          class="rounded-xl p-2 text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800">
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+
+      <div class="mb-4">
+        <input
+          [(ngModel)]="searchQuery"
+          type="text"
+          placeholder="Rechercher un utilisateur..."
+          class="w-full rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+        />
+      </div>
+
+      <div class="max-h-80 overflow-y-auto space-y-2">
+        <div *ngIf="loading()" class="flex items-center justify-center py-8">
+          <div class="h-6 w-6 animate-spin rounded-full border-2 border-sky-500 border-t-transparent"></div>
+        </div>
+
+        <div *ngIf="!loading() && filteredUsers.length === 0" class="text-center py-8 text-sm text-gray-500 dark:text-gray-400">
+          Aucun utilisateur disponible
+        </div>
+
+        <div *ngFor="let user of filteredUsers"
+             (click)="selectUser(user)"
+             [class]="selectedUser()?._id === user._id ? 'bg-sky-50 dark:bg-sky-900/20 border-sky-500' : 'hover:bg-gray-50 dark:hover:bg-gray-800/50 border-gray-200 dark:border-gray-700'"
+             class="cursor-pointer rounded-2xl border p-3 transition">
+          <div class="flex items-center gap-3">
+            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-sky-400 to-blue-500 text-white font-semibold">
+              {{ getUserInitials(user) }}
+            </div>
+            <div class="flex-1">
+              <p class="font-medium text-gray-900 dark:text-white">{{ getUserName(user) }}</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400">{{ user.email }}</p>
+              <p class="text-xs text-sky-500">{{ user.role }}</p>
+            </div>
+            <div *ngIf="selectedUser()?._id === user._id" class="text-sky-500">
+              <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-4 flex gap-2">
+        <button
+          (click)="closeNewConversation()"
+          class="flex-1 rounded-2xl border border-gray-200 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800 transition">
+          Annuler
+        </button>
+        <button
+          (click)="startConversation()"
+          [disabled]="!selectedUser()"
+          class="flex-1 rounded-2xl bg-sky-500 px-4 py-3 text-sm font-medium text-white hover:bg-sky-600 disabled:opacity-50 disabled:hover:bg-sky-500 transition">
+          Démarrer
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

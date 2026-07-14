@@ -1,7 +1,11 @@
 import { CommonModule } from '@angular/common';
 import { Component, computed, inject, signal, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { ApiService } from '../../services/api.service';
+import { firstValueFrom } from 'rxjs';
+import { IssueType, TicketPriority } from '../../models/ticket.model';
+import { ModalComponent } from '../../shared/components/ui/modal/modal.component';
 
 interface AssignedDevice {
   id: string;
@@ -12,13 +16,12 @@ interface AssignedDevice {
   location: string;
   serialNumber: string;
   assignedAt?: string | null;
-  photo?: string | null;
 }
 
 @Component({
   selector: 'app-consultant-devices',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RouterModule, ModalComponent],
   template: `
     <div class="space-y-6">
       <div class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
@@ -27,9 +30,18 @@ interface AssignedDevice {
             <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Mes appareils</h1>
             <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">Consultez les appareils qui vous ont été attribués et trouvez-les rapidement.</p>
           </div>
-          <div class="rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 shadow-sm dark:border-gray-700 dark:bg-gray-800">
-            <p class="text-xs uppercase tracking-[0.2em] text-gray-500 dark:text-gray-400">Total</p>
-            <p class="mt-1 text-3xl font-semibold text-gray-900 dark:text-white">{{ totalCount() }}</p>
+          <div class="flex items-center gap-3">
+            <div class="rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+              <p class="text-xs uppercase tracking-[0.2em] text-gray-500 dark:text-gray-400">Total</p>
+              <p class="mt-1 text-3xl font-semibold text-gray-900 dark:text-white">{{ totalCount() }}</p>
+            </div>
+            <button
+              type="button"
+              routerLink="/my-tickets"
+              class="rounded-xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700"
+            >
+              Mes tickets
+            </button>
           </div>
         </div>
 
@@ -66,34 +78,34 @@ interface AssignedDevice {
 
       <div *ngIf="!loading() && devices().length > 0" class="grid gap-4 lg:grid-cols-2">
         <article *ngFor="let device of devices()" class="overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-gray-800 dark:bg-gray-950">
-          <div class="flex flex-col gap-4 p-5 sm:flex-row sm:items-start">
-            <div class="h-40 w-full overflow-hidden rounded-3xl bg-slate-100 text-gray-500 dark:bg-slate-900 sm:h-48 sm:w-48">
-              <img *ngIf="device.photo" [src]="device.photo" [alt]="device.name" class="h-full w-full object-cover" />
-              <div *ngIf="!device.photo" class="flex h-full items-center justify-center bg-slate-100 text-slate-500 dark:bg-slate-900 dark:text-slate-400">
-                <span class="text-sm">Aucune photo</span>
+          <div class="flex flex-col gap-4 p-5">
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p class="text-xs font-semibold uppercase tracking-[0.24em] text-sky-600 dark:text-sky-400">{{ device.type || 'Type inconnu' }}</p>
+                <h2 class="mt-2 text-xl font-semibold text-gray-900 dark:text-white">{{ device.name }}</h2>
+                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ displayValue(device.department) }}</p>
               </div>
             </div>
 
-            <div class="flex-1 space-y-4">
-              <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <p class="text-xs font-semibold uppercase tracking-[0.24em] text-sky-600 dark:text-sky-400">{{ device.type || 'Type inconnu' }}</p>
-                  <h2 class="mt-2 text-xl font-semibold text-gray-900 dark:text-white">{{ device.name }}</h2>
-                  <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ displayValue(device.department) }}</p>
-                </div>
+            <div class="grid gap-3 sm:grid-cols-2">
+              <div class="rounded-3xl bg-gray-50 p-4 text-sm dark:bg-gray-950/40">
+                <p class="text-xs text-gray-500 dark:text-gray-400">N° de série</p>
+                <p class="mt-2 font-medium text-gray-900 dark:text-white">{{ displayValue(device.serialNumber) }}</p>
               </div>
-
-              <div class="grid gap-3 sm:grid-cols-2">
-                <div class="rounded-3xl bg-gray-50 p-4 text-sm dark:bg-gray-950/40">
-                  <p class="text-xs text-gray-500 dark:text-gray-400">N° de série</p>
-                  <p class="mt-2 font-medium text-gray-900 dark:text-white">{{ displayValue(device.serialNumber) }}</p>
-                </div>
-                <div class="rounded-3xl bg-gray-50 p-4 text-sm dark:bg-gray-950/40">
-                  <p class="text-xs text-gray-500 dark:text-gray-400">Date d’assignation</p>
-                  <p class="mt-2 font-medium text-gray-900 dark:text-white">{{ formatAssignedAt(device.assignedAt) }}</p>
-                </div>
+              <div class="rounded-3xl bg-gray-50 p-4 text-sm dark:bg-gray-950/40">
+                <p class="text-xs text-gray-500 dark:text-gray-400">Date d'assignation</p>
+                <p class="mt-2 font-medium text-gray-900 dark:text-white">{{ formatAssignedAt(device.assignedAt) }}</p>
               </div>
+            </div>
 
+            <div class="mt-4">
+              <button
+                type="button"
+                (click)="openTicketModal(device)"
+                class="w-full rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700"
+              >
+                Signaler un problème
+              </button>
             </div>
           </div>
         </article>
@@ -138,6 +150,50 @@ interface AssignedDevice {
           </button>
         </div>
       </div>
+
+      <!-- Ticket Creation Modal -->
+      <app-modal [isOpen]="showTicketModal()" (close)="closeTicketModal()" className="max-w-md mx-4">
+        <div class="p-6">
+          <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Signaler un problème</h2>
+          @if (ticketError()) {
+            <div class="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-950/20 dark:text-red-300">
+              {{ ticketError() }}
+            </div>
+          }
+          <div class="space-y-3">
+            <div>
+              <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Titre</label>
+              <input type="text" [(ngModel)]="ticketForm().title" class="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900 dark:border-gray-700 dark:bg-gray-800 dark:text-white" placeholder="Titre du problème">
+            </div>
+            <div>
+              <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Description</label>
+              <textarea [(ngModel)]="ticketForm().description" rows="2" class="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900 dark:border-gray-700 dark:bg-gray-800 dark:text-white" placeholder="Décrivez le problème"></textarea>
+            </div>
+            <div>
+              <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Type de problème</label>
+              <select [(ngModel)]="ticketForm().issueType" class="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900 dark:border-gray-700 dark:bg-gray-800 dark:text-white">
+                <option value="damaged">Endommagé</option>
+                <option value="destroyed">Détruit</option>
+                <option value="malfunction">Dysfonctionnement</option>
+                <option value="other">Autre</option>
+              </select>
+            </div>
+            <div>
+              <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Priorité</label>
+              <select [(ngModel)]="ticketForm().priority" class="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900 dark:border-gray-700 dark:bg-gray-800 dark:text-white">
+                <option value="low">Faible</option>
+                <option value="medium">Moyenne</option>
+                <option value="high">Haute</option>
+                <option value="urgent">Urgent</option>
+              </select>
+            </div>
+            <div class="flex justify-end gap-2 pt-2">
+              <button type="button" (click)="closeTicketModal()" class="rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700">Annuler</button>
+              <button type="button" (click)="createTicket()" [disabled]="ticketLoading()" class="rounded-xl bg-blue-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:opacity-50">{{ ticketLoading() ? 'Création...' : 'Créer' }}</button>
+            </div>
+          </div>
+        </div>
+      </app-modal>
     </div>
   `
 })
@@ -154,6 +210,18 @@ export class ConsultantDevicesComponent implements OnInit {
   currentPage = signal(1);
   itemsPerPage = signal(10);
   totalCount = signal(0);
+
+  // Ticket creation modal state
+  showTicketModal = signal(false);
+  ticketForm = signal({
+    title: '',
+    description: '',
+    deviceId: '',
+    issueType: 'damaged' as IssueType,
+    priority: 'medium' as TicketPriority
+  });
+  ticketLoading = signal(false);
+  ticketError = signal<string | null>(null);
 
   totalPages = computed(() => {
     return Math.max(1, Math.ceil(this.totalCount() / this.itemsPerPage()));
@@ -189,7 +257,6 @@ export class ConsultantDevicesComponent implements OnInit {
             location: device.location || 'À définir',
             serialNumber: device.serialNumber || 'N/A',
             assignedAt: device.assignedAt || null,
-            photo: Array.isArray(device.photos) && device.photos.length > 0 ? device.photos[0] : null,
           }))
         );
         this.totalCount.set(response.total ?? response.devices.length);
@@ -260,6 +327,51 @@ export class ConsultantDevicesComponent implements OnInit {
 
   displayValue(value?: string | null) {
     return value && value.trim() ? value : 'À définir';
+  }
+
+  openTicketModal(device: AssignedDevice) {
+    this.ticketForm.set({
+      title: '',
+      description: '',
+      deviceId: device.id,
+      issueType: 'damaged' as IssueType,
+      priority: 'medium' as TicketPriority
+    });
+    this.ticketError.set(null);
+    this.showTicketModal.set(true);
+  }
+
+  closeTicketModal() {
+    this.showTicketModal.set(false);
+    this.ticketForm.set({
+      title: '',
+      description: '',
+      deviceId: '',
+      issueType: 'damaged' as IssueType,
+      priority: 'medium' as TicketPriority
+    });
+    this.ticketError.set(null);
+  }
+
+  async createTicket() {
+    const form = this.ticketForm();
+    
+    if (!form.title || !form.description || !form.deviceId || !form.issueType) {
+      this.ticketError.set('Veuillez remplir tous les champs obligatoires');
+      return;
+    }
+
+    this.ticketLoading.set(true);
+    this.ticketError.set(null);
+
+    try {
+      await firstValueFrom(this.apiService.createTicket(form));
+      this.ticketLoading.set(false);
+      this.closeTicketModal();
+    } catch (err: any) {
+      this.ticketError.set(err.error?.message || 'Failed to create ticket');
+      this.ticketLoading.set(false);
+    }
   }
 }
 

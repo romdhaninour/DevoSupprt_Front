@@ -6,6 +6,7 @@ import { ApiService } from '../../services/api.service';
 import { User } from '../../models/user.model';
 import { ModalComponent } from '../../shared/components/ui/modal/modal.component';
 import { firstValueFrom } from 'rxjs';
+import { IssueType, TicketPriority } from '../../models/ticket.model';
 
 type DeviceStatus = 'available' | 'assigned' | 'maintenance' | 'retired';
 type DeviceType = 'Laptop' | 'Desktop' | 'Mobile' | 'Tablet' | 'Printer' | 'Scanner' | 'Monitor' | 'Router' | 'Switch' | 'Access Point' | 'Camera' | 'Projecteur';
@@ -24,7 +25,6 @@ interface Device {
   assignedTo?: string | null;
   assignedAt?: string | null;
   assignedBy?: string | null;
-  photos?: string[];
 }
 
 @Component({
@@ -55,14 +55,25 @@ export class DeviceManagementComponent implements OnInit {
   importingDevices = signal(false);
   importFeedback = signal<string | null>(null);
   importFeedbackType = signal<'success' | 'error' | null>(null);
-  photoFile = signal<File | null>(null);
-  photoPreviewUrl = signal<string | null>(null);
-  currentDevicePhotos = signal<string[]>([]);
   // Allocation state
   selectedDeviceForAllocation = signal<Device | null>(null);
   selectedConsultantId = signal('');
   allocateLoading = signal(false);
   openActionMenuId = signal<string | null>(null);
+  actionMenuPosition = signal<{top: number, left: number} | null>(null);
+
+  // Ticket creation modal state
+  showTicketModal = signal(false);
+  ticketForm = signal({
+    title: '',
+    description: '',
+    deviceId: '',
+    issueType: 'damaged' as IssueType,
+    priority: 'medium' as TicketPriority
+  });
+  ticketLoading = signal(false);
+  ticketError = signal<string | null>(null);
+
   formDevice = signal<Partial<Device>>({
     name: '',
     type: 'Laptop',
@@ -78,6 +89,11 @@ export class DeviceManagementComponent implements OnInit {
   ngOnInit() {
     this.loadDevices();
     this.loadConsultants();
+  }
+
+  onFilterChange() {
+    this.currentPage.set(1);
+    this.loadDevices();
   }
 
   openDatePicker(el: HTMLInputElement | null) {
@@ -113,7 +129,6 @@ export class DeviceManagementComponent implements OnInit {
           assignedTo: device.assignedTo || null,
           assignedAt: device.assignedAt || null,
           assignedBy: device.assignedBy || null,
-          photos: device.photos || [],
         })));
         this.total.set(data.total);
         this.loading.set(false);
@@ -182,13 +197,17 @@ export class DeviceManagementComponent implements OnInit {
     const current = this.openActionMenuId();
     if (current === deviceId) {
       this.openActionMenuId.set(null);
+      this.actionMenuPosition.set(null);
     } else {
       this.openActionMenuId.set(deviceId);
+      const rect = (event.target as HTMLElement).getBoundingClientRect();
+      this.actionMenuPosition.set({ top: rect.bottom + 5, left: rect.left });
     }
   }
 
   closeActionMenu() {
     this.openActionMenuId.set(null);
+    this.actionMenuPosition.set(null);
   }
 
   hasNoValue(value: string | undefined | null): boolean {
@@ -244,9 +263,6 @@ export class DeviceManagementComponent implements OnInit {
       return;
     }
     this.editingDeviceId.set(null);
-    this.photoFile.set(null);
-    this.photoPreviewUrl.set(null);
-    this.currentDevicePhotos.set([]);
     this.formDevice.set({
       name: '',
       type: 'Laptop',
@@ -266,23 +282,10 @@ export class DeviceManagementComponent implements OnInit {
       return;
     }
     this.editingDeviceId.set(device.id);
-    this.photoFile.set(null);
-    this.photoPreviewUrl.set(device.photos && device.photos.length > 0 ? device.photos[0] : null);
-    this.currentDevicePhotos.set(device.photos || []);
     this.formDevice.set({ ...device });
     this.showAddForm.set(true);
   }
 
-  onModalPhotoSelected(event: Event) {
-    const input = event.target as HTMLInputElement;
-    const file = input.files?.[0] ?? null;
-    this.photoFile.set(file);
-    if (file) {
-      this.photoPreviewUrl.set(URL.createObjectURL(file));
-    } else {
-      this.photoPreviewUrl.set(null);
-    }
-  }
 
   async saveDevice() {
     const device = this.formDevice();
@@ -305,30 +308,20 @@ export class DeviceManagementComponent implements OnInit {
       purchaseDate: device.purchaseDate || ''
     };
 
-    const file = this.photoFile();
-
     try {
       let deviceId: string;
 
       if (this.editingDeviceId()) {
-        const updatedDevice: any = file
-          ? await firstValueFrom(this.apiService.updateDeviceWithPhoto(String(this.editingDeviceId()), payload, file))
-          : await firstValueFrom(this.apiService.updateDevice(String(this.editingDeviceId()), payload));
+        const updatedDevice: any = await firstValueFrom(this.apiService.updateDevice(String(this.editingDeviceId()), payload));
         deviceId = updatedDevice._id || updatedDevice.id || String(this.editingDeviceId());
       } else {
-        const createdDevice: any = file
-          ? await firstValueFrom(this.apiService.createDeviceWithPhoto(payload, file))
-          : await firstValueFrom(this.apiService.createDevice(payload));
+        const createdDevice: any = await firstValueFrom(this.apiService.createDevice(payload));
         deviceId = createdDevice._id || createdDevice.id;
       }
 
-      await firstValueFrom(this.apiService.getDevices(this.currentPage(), this.itemsPerPage, this.searchTerm()));
       this.loadDevices();
       this.showAddForm.set(false);
       this.editingDeviceId.set(null);
-      this.photoFile.set(null);
-      this.photoPreviewUrl.set(null);
-      this.currentDevicePhotos.set([]);
       this.formDevice.set({
         name: '',
         type: 'Laptop',
@@ -443,5 +436,51 @@ export class DeviceManagementComponent implements OnInit {
         this.error.set('Impossible d\'exporter la liste des appareils.');
       },
     });
+  }
+
+  openTicketModal(device: Device) {
+    this.ticketForm.set({
+      title: '',
+      description: '',
+      deviceId: device.id,
+      issueType: 'damaged' as IssueType,
+      priority: 'medium' as TicketPriority
+    });
+    this.ticketError.set(null);
+    this.showTicketModal.set(true);
+    this.closeActionMenu();
+  }
+
+  closeTicketModal() {
+    this.showTicketModal.set(false);
+    this.ticketForm.set({
+      title: '',
+      description: '',
+      deviceId: '',
+      issueType: 'damaged' as IssueType,
+      priority: 'medium' as TicketPriority
+    });
+    this.ticketError.set(null);
+  }
+
+  async createTicket() {
+    const form = this.ticketForm();
+    
+    if (!form.title || !form.description || !form.deviceId || !form.issueType) {
+      this.ticketError.set('Veuillez remplir tous les champs obligatoires');
+      return;
+    }
+
+    this.ticketLoading.set(true);
+    this.ticketError.set(null);
+
+    try {
+      await firstValueFrom(this.apiService.createTicket(form));
+      this.ticketLoading.set(false);
+      this.closeTicketModal();
+    } catch (err: any) {
+      this.ticketError.set(err.error?.message || 'Failed to create ticket');
+      this.ticketLoading.set(false);
+    }
   }
 }

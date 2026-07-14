@@ -53,7 +53,22 @@ export class UserDropdownComponent implements OnInit {
 
   get avatar() {
     const storedProfilePicture = localStorage.getItem('user_profile_picture');
-    return this.user.profilePicture || storedProfilePicture || '/images/user/owner.png';
+    const userId = localStorage.getItem('user_id');
+
+    // Use backend proxy if we have a userId and profile picture URL
+    if (userId && (this.user.profilePicture || storedProfilePicture)) {
+      const proxyUrl = `http://localhost:3000/users/${userId}/profile-picture`;
+      return proxyUrl;
+    }
+
+    // Return empty string to trigger initials fallback
+    return '';
+  }
+
+  get initials() {
+    const prenom = this.user.prenom || '';
+    const nom = this.user.nom || '';
+    return `${prenom[0] || ''}${nom[0] || ''}`.toUpperCase();
   }
 
   toggleDropdown() {
