@@ -96,16 +96,17 @@ export class DeviceAllocationComponent implements OnInit {
           id: device._id,
           name: device.name,
           status: device.status,
-          assignedTo: device.assignedTo || null,
+          assignedTo: device.assignedToName || device.assignedTo || null,
           assignedAt: device.assignedAt || null,
         }));
         this.devices.set(mappedDevices.filter((device) => device.status === 'available'));
         this.assignedDevices.set(mappedDevices.filter((device) => device.status === 'assigned'));
         this.loading.set(false);
       },
-      error: () => {
+      error: (err) => {
         this.loading.set(false);
-        this.setMessage('Impossible de charger la liste des appareils.', 'error');
+        const msg = err?.error?.message || err?.message || 'Impossible de charger la liste des appareils.';
+        this.setMessage(msg, 'error');
       }
     });
 
@@ -132,9 +133,10 @@ export class DeviceAllocationComponent implements OnInit {
         this.loadData();
         this.setMessage('Appareil attribué avec succès.', 'success');
       },
-      error: () => {
+      error: (err) => {
         this.loading.set(false);
-        this.setMessage("Impossible d'attribuer cet appareil.", 'error');
+        const msg = err?.error?.message || err?.message || "Impossible d'attribuer cet appareil.";
+        this.setMessage(msg, 'error');
       }
     });
   }
@@ -146,9 +148,10 @@ export class DeviceAllocationComponent implements OnInit {
         this.loadData();
         this.setMessage('Appareil restitué avec succès.', 'success');
       },
-      error: () => {
+      error: (err) => {
         this.loading.set(false);
-        this.setMessage('Impossible de restituer cet appareil.', 'error');
+        const msg = err?.error?.message || err?.message || "Impossible de restituer cet appareil.";
+        this.setMessage(msg, 'error');
       }
     });
   }
