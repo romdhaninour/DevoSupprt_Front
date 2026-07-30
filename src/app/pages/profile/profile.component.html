@@ -137,8 +137,8 @@
 
 <!-- Edit Profile Modal -->
 <app-modal
-  [isOpen]="isEditModalOpen"
-  (close)="closeEditModal()"
+   [isOpen]="isEditModalOpen()"
+   (close)="closeEditModal()"
   [showCloseButton]="false"
   className="max-w-[550px] m-4"
 >
@@ -179,13 +179,13 @@
             <div class="relative flex-shrink-0">
               <div class="w-20 h-20 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-bold text-2xl overflow-hidden ring-4 ring-gray-100 dark:ring-gray-800 shadow-md">
                 <img
-                  *ngIf="editForm.profilePicture && !imageError"
+                  *ngIf="editForm.profilePicture && !imageError()"
                   [src]="editForm.profilePicture"
                   [alt]="'Photo de profil'"
                   class="w-full h-full object-cover"
-                  (error)="imageError = true"
+                  (error)="imageError.set(true)"
                 />
-                <span *ngIf="!editForm.profilePicture || imageError">
+                <span *ngIf="!editForm.profilePicture || imageError()">
                   {{ user.prenom?.[0] || '' }}{{ user.nom?.[0] || '' }}
                 </span>
               </div>
@@ -209,24 +209,24 @@
                   Choisir une photo
                 </label>
                 <button
-                  *ngIf="selectedProfilePicture"
+                  *ngIf="selectedProfilePicture()"
                   (click)="uploadProfilePicture()"
-                  [disabled]="uploadingProfilePicture"
+                  [disabled]="uploadingProfilePicture()"
                   class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-xl bg-sky-500 text-white hover:bg-sky-600 disabled:opacity-50 transition">
-                  <svg *ngIf="uploadingProfilePicture" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <svg *ngIf="uploadingProfilePicture()" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
-                  {{ uploadingProfilePicture ? 'Traitement...' : 'Télécharger' }}
+                  {{ uploadingProfilePicture() ? 'Traitement...' : 'Télécharger' }}
                 </button>
               </div>
               <p class="text-xs text-gray-500 dark:text-gray-400">
                 JPG, PNG ou WebP (max 5MB). L'image sera compressée automatiquement.
               </p>
-              <p *ngIf="selectedProfilePicture" class="text-xs text-sky-500">
-                Sélectionné: {{ selectedProfilePicture.name }} ({{ formatFileSize(selectedProfilePicture.size) }})
+              <p *ngIf="selectedProfilePicture()" class="text-xs text-sky-500">
+                Sélectionné: {{ selectedProfilePicture()!.name }} ({{ formatFileSize(selectedProfilePicture()!.size) }})
               </p>
-              <p *ngIf="imageError" class="text-xs text-red-600 dark:text-red-400">
+              <p *ngIf="imageError()" class="text-xs text-red-600 dark:text-red-400">
                 Fichier invalide. Veuillez choisir une image.
               </p>
             </div>
@@ -276,21 +276,21 @@
           <button
             type="button"
             (click)="closeEditModal()"
-            [disabled]="saving"
+            [disabled]="saving()"
             class="px-5 py-2.5 text-sm font-semibold rounded-xl border-2 border-gray-300 bg-white text-gray-700 hover:bg-gray-50 hover:border-gray-400 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Annuler
           </button>
           <button
             type="submit"
-            [disabled]="saving || profileForm.invalid"
+            [disabled]="saving() || profileForm.invalid"
             class="px-5 py-2.5 text-sm font-semibold rounded-xl bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-gray-900 disabled:opacity-50 disabled:cursor-not-allowed shadow-md transition-all duration-200"
           >
             <span class="flex items-center gap-2">
-              <svg *ngIf="saving" class="w-4 h-4 animate-spin" viewBox="0 0 20 20" fill="currentColor">
+              <svg *ngIf="saving()" class="w-4 h-4 animate-spin" viewBox="0 0 20 20" fill="currentColor">
                 <path fill-rule="evenodd" clip-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" />
               </svg>
-              {{ saving ? 'Enregistrement...' : 'Enregistrer' }}
+              {{ saving() ? 'Enregistrement...' : 'Enregistrer' }}
             </span>
           </button>
         </div>

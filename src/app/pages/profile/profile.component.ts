@@ -26,16 +26,16 @@ export class ProfileComponent implements OnInit {
   user: any = {};
   tickets = signal<Ticket[]>([]);
   devices = signal<any[]>([]);
-  isEditModalOpen = false;
+  isEditModalOpen = signal(false);
   editForm = {
     prenom: '',
     nom: '',
     profilePicture: ''
   };
-  saving = false;
-  imageError = false;
-  uploadingProfilePicture = false;
-  selectedProfilePicture: File | null = null;
+  saving = signal(false);
+  imageError = signal(false);
+  uploadingProfilePicture = signal(false);
+  selectedProfilePicture = signal<File | null>(null);
 
   constructor(private apiService: ApiService) {}
 
@@ -169,12 +169,12 @@ export class ProfileComponent implements OnInit {
   }
 
   openEditModal() {
-    this.isEditModalOpen = true;
+    this.isEditModalOpen.set(true);
   }
 
   closeEditModal() {
-    this.isEditModalOpen = false;
-    this.selectedProfilePicture = null;
+    this.isEditModalOpen.set(false);
+    this.selectedProfilePicture.set(null);
   }
 
   onProfilePictureSelected(event: Event) {
@@ -182,43 +182,40 @@ export class ProfileComponent implements OnInit {
     if (input.files && input.files[0]) {
       const file = input.files[0];
       if (ImageCompressionUtil.isImage(file)) {
-        this.selectedProfilePicture = file;
-        this.imageError = false;
+        this.selectedProfilePicture.set(file);
+        this.imageError.set(false);
       } else {
-        this.imageError = true;
-        this.selectedProfilePicture = null;
+        this.imageError.set(true);
+        this.selectedProfilePicture.set(null);
       }
     }
   }
 
   async uploadProfilePicture() {
-    if (!this.selectedProfilePicture) return;
+    const file = this.selectedProfilePicture();
+    if (!file) return;
 
-    this.uploadingProfilePicture = true;
+    this.uploadingProfilePicture.set(true);
 
     try {
-      // Compress image before upload
-      const compressedFile = await ImageCompressionUtil.compressImage(this.selectedProfilePicture, {
+      const compressedFile = await ImageCompressionUtil.compressImage(file, {
         maxWidth: 512,
         maxHeight: 512,
         quality: 0.85,
         outputFormat: 'image/jpeg',
       });
 
-      console.log(`Profile picture compressed: ${ImageCompressionUtil.formatFileSize(this.selectedProfilePicture.size)} -> ${ImageCompressionUtil.formatFileSize(compressedFile.size)}`);
-
-      // Convert to base64 for storage (since we're using URL field)
       const reader = new FileReader();
       reader.onload = (e) => {
         const base64 = e.target?.result as string;
         this.editForm.profilePicture = base64;
-        this.uploadingProfilePicture = false;
-        this.selectedProfilePicture = null;
+        this.uploadingProfilePicture.set(false);
+        this.selectedProfilePicture.set(null);
       };
       reader.readAsDataURL(compressedFile);
     } catch (error) {
       console.error('Profile picture compression failed:', error);
-      this.uploadingProfilePicture = false;
+      this.uploadingProfilePicture.set(false);
       alert('Failed to process image. Please try again.');
     }
   }
@@ -228,54 +225,58 @@ export class ProfileComponent implements OnInit {
   }
 
   saveProfile() {
-    this.saving = true;
-    
-    // Get user ID from localStorage
+    this.saving.set(true);
+
     const userId = localStorage.getItem('user_id');
-    console.log('saveProfile - userId from localStorage:', userId);
-    console.log('saveProfile - editForm:', this.editForm);
-    
+
     if (userId) {
-      console.log('Calling API to update user:', userId);
-      // Update via API
       this.apiService.updateUser(userId, {
         nom: this.editForm.nom,
         prenom: this.editForm.prenom,
         profilePicture: this.editForm.profilePicture
       }).subscribe({
-        next: (updatedUser) => {
-          console.log('Profile updated successfully:', updatedUser);
-          // Update localStorage with new values
+        next: () => {
           localStorage.setItem('user_prenom', this.editForm.prenom);
           localStorage.setItem('user_nom', this.editForm.nom);
-          localStorage.setItem('user_profile_picture', this.editForm.profilePicture);
-          
-          // Update user object
+
+          if (this.editForm.profilePicture) {
+            try {
+              localStorage.setItem('user_profile_picture', this.editForm.profilePicture);
+            } catch {
+              console.warn('Profile picture too large for localStorage, skipping');
+            }
+          }
+
           this.user.prenom = this.editForm.prenom;
           this.user.nom = this.editForm.nom;
           this.user.profilePicture = this.editForm.profilePicture;
-          
-          this.saving = false;
+
+          this.saving.set(false);
           this.closeEditModal();
         },
         error: (err) => {
           console.error('Failed to update profile:', err);
-          this.saving = false;
+          this.saving.set(false);
           alert('Failed to update profile. Please try again.');
         }
       });
     } else {
-      console.log('No userId found, falling back to localStorage only');
-      // Fallback to localStorage only if no user ID
       localStorage.setItem('user_prenom', this.editForm.prenom);
       localStorage.setItem('user_nom', this.editForm.nom);
-      localStorage.setItem('user_profile_picture', this.editForm.profilePicture);
-      
+
+      if (this.editForm.profilePicture) {
+        try {
+          localStorage.setItem('user_profile_picture', this.editForm.profilePicture);
+        } catch {
+          console.warn('Profile picture too large for localStorage, skipping');
+        }
+      }
+
       this.user.prenom = this.editForm.prenom;
       this.user.nom = this.editForm.nom;
       this.user.profilePicture = this.editForm.profilePicture;
-      
-      this.saving = false;
+
+      this.saving.set(false);
       this.closeEditModal();
     }
   }
