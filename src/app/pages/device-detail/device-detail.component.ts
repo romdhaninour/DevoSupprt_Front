@@ -2,6 +2,7 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { ApiService } from '../../services/api.service';
+import { environment } from '../../../environments/environment';
 
 const MAINTENANCE_FREQ_LABELS: Record<string, string> = {
   '1month': '1 mois',
@@ -124,6 +125,6 @@ export class DeviceDetailComponent implements OnInit {
     if (photo.startsWith('http')) return photo;
     const d = this.device();
     const id = d?._id || d?.id;
-    return `http://localhost:3000/devices/${id}/photos/${photo}`;
+    return `${environment.apiUrl}/devices/${id}/photos/${photo}`;
   }
 }

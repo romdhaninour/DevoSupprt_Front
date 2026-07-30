@@ -4,6 +4,7 @@ import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 import { DropdownItemTwoComponent } from '../../ui/dropdown/dropdown-item/dropdown-item.component-two';
 import { ApiService } from '../../../../services/api.service';
+import { environment } from '../../../../../environments/environment';
 
 @Component({
   selector: 'app-user-dropdown',
@@ -57,7 +58,7 @@ export class UserDropdownComponent implements OnInit {
 
     // Use backend proxy if we have a userId and profile picture URL
     if (userId && (this.user.profilePicture || storedProfilePicture)) {
-      const proxyUrl = `http://localhost:3000/users/${userId}/profile-picture`;
+      const proxyUrl = `${environment.apiUrl}/users/${userId}/profile-picture`;
       return proxyUrl;
     }
 

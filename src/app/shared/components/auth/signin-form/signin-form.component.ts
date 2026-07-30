@@ -3,6 +3,7 @@ import { Component, Input } from '@angular/core';
 import { RouterModule, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
+import { environment } from '../../../../../environments/environment';
 
 @Component({
   selector: 'app-signin-form',
@@ -37,6 +38,6 @@ export class SigninFormComponent {
 
   signInWithGoogle() {
     // Redirect to backend Google OAuth endpoint
-    window.location.href = 'http://localhost:3000/auth/google';
+    window.location.href = `${environment.apiUrl}/auth/google`;
   }
 }

@@ -6,6 +6,7 @@ import { ApiService } from '../../services/api.service';
 import { User } from '../../models/user.model';
 import { ModalComponent } from '../../shared/components/ui/modal/modal.component';
 import { firstValueFrom } from 'rxjs';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-user-management',
@@ -479,7 +480,7 @@ export class UserManagementComponent implements OnInit {
 
   getProfilePictureUrl(user: User): string {
     if (user.profilePicture && user.profilePicture !== '') {
-      return `http://localhost:3000/users/${user._id}/profile-picture`;
+      return `${environment.apiUrl}/users/${user._id}/profile-picture`;
     }
     return '';
   }
