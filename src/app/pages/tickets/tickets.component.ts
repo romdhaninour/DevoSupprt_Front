@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject, signal, OnInit, computed } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterModule } from '@angular/router';
+import { RouterModule, Router } from '@angular/router';
 import { ActivatedRoute } from '@angular/router';
 import { ApiService } from '../../services/api.service';
 import { ModalComponent } from '../../shared/components/ui/modal/modal.component';
@@ -14,17 +14,14 @@ import {
   TicketPriority,
   ResolutionType,
   CreateTicketDto,
-  UpdateTicketStatusDto,
-  AddCommentDto,
 } from '../../models/ticket.model';
-import { User } from '../../models/user.model';
-
-type DeviceType = 'Laptop' | 'Desktop' | 'Mobile' | 'Tablet' | 'Printer' | 'Scanner' | 'Monitor' | 'Router' | 'Switch' | 'Access Point' | 'Camera' | 'Projecteur';
 
 interface Device {
   id: string;
   name: string;
-  type: DeviceType;
+  type: string;
+  owner: string;
+  assignedToName: string;
 }
 
 @Component({
@@ -36,23 +33,23 @@ interface Device {
 export class TicketsComponent implements OnInit {
   private readonly apiService = inject(ApiService);
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
 
   // Expose enums to the template
   readonly TicketStatus = TicketStatus;
   readonly TicketPriority = TicketPriority;
-  readonly IssueType = IssueType;
-  readonly ResolutionType = ResolutionType;
 
   tickets = signal<Ticket[]>([]);
   devices = signal<Device[]>([]);
-  itStaff = signal<User[]>([]);
   loading = signal(false);
   error = signal<string | null>(null);
 
   // View state
-  selectedTicket = signal<Ticket | null>(null);
   showCreateModal = signal(false);
   showDetailModal = signal(false);
+  selectedTicket = signal<any>(null);
+  newComment = signal('');
+  itStaff = signal<any[]>([]);
 
   // Form state
   createForm = signal<Partial<CreateTicketDto>>({
@@ -65,26 +62,23 @@ export class TicketsComponent implements OnInit {
   createLoading = signal(false);
   createError = signal<string | null>(null);
 
-  // Comment state
-  newComment = signal('');
-  commentLoading = signal(false);
-
-  // Status update loading state
-  statusLoading = signal(false);
-
-  // Assignment loading state
-  assignLoading = signal(false);
-
-  // Resolution choice UI state
-  showResolutionChoice = signal(false);
-
-  // Delete loading state
-  deleteLoading = signal(false);
+  // Sort state
+  sortOrder = signal<'desc' | 'asc'>('desc');
 
   // IT/ADMIN filters
   statusFilter = signal<string>('all');
   priorityFilter = signal<string>('all');
   issueTypeFilter = signal<string>('all');
+
+  // Device search state
+  deviceSearchTerm = signal('');
+  showDeviceDropdown = signal(false);
+  filteredDevices = computed(() => {
+    const term = this.deviceSearchTerm().toLowerCase();
+    return this.devices().filter(d =>
+      !term || d.name.toLowerCase().includes(term) || d.type.toLowerCase().includes(term) || d.assignedToName.toLowerCase().includes(term)
+    );
+  });
 
   // User role
   userRole = signal(localStorage.getItem('user_role') || '');
@@ -110,10 +104,6 @@ export class TicketsComponent implements OnInit {
       this.loadTickets();
     });
 
-    if (this.isIT()) {
-      this.loadITStaff();
-    }
-
     // Check for query parameters to pre-fill create form and auto-open modal
     this.route.queryParams.subscribe(params => {
       console.log('Query params received:', params);
@@ -130,6 +120,10 @@ export class TicketsComponent implements OnInit {
         });
       }
     });
+
+    if (this.isIT()) {
+      this.loadITStaff();
+    }
   }
 
   loadTickets() {
@@ -143,6 +137,7 @@ export class TicketsComponent implements OnInit {
       undefined,
       undefined,
       this.isMyTicketsView(),
+      this.sortOrder(),
     ).subscribe({
       next: (data) => {
         this.tickets.set(data.tickets);
@@ -156,17 +151,32 @@ export class TicketsComponent implements OnInit {
   }
 
   loadDevices() {
-    // IT/Admin users can create tickets for any device, so load all devices
-    // Consultants can only create tickets for their assigned devices
     if (this.isIT()) {
       return this.apiService.getDevices(1, 1000).pipe(
         tap((data) => {
-          const mappedDevices = data.devices.map((d: any) => ({
-            id: d._id || d.id,
-            name: d.name,
-            type: d.type
-          }));
-          this.devices.set(mappedDevices);
+          this.apiService.getUsers().subscribe({
+            next: (users) => {
+              const userMap = new Map(users.map((u: any) => [u._id, `${u.prenom || ''} ${u.nom || ''}`.trim() || u.email]));
+              const mappedDevices = data.devices.map((d: any) => ({
+                id: d._id || d.id,
+                name: d.name,
+                type: d.type,
+                owner: d.owner || '',
+                assignedToName: d.assignedTo ? (userMap.get(d.assignedTo) || 'Inconnu') : '',
+              }));
+              this.devices.set(mappedDevices);
+            },
+            error: () => {
+              const mappedDevices = data.devices.map((d: any) => ({
+                id: d._id || d.id,
+                name: d.name,
+                type: d.type,
+                owner: d.owner || '',
+                assignedToName: '',
+              }));
+              this.devices.set(mappedDevices);
+            }
+          });
         }),
         catchError((err) => {
           console.error('Failed to load devices:', err);
@@ -180,7 +190,9 @@ export class TicketsComponent implements OnInit {
           const mappedDevices = data.devices.map((d: any) => ({
             id: d._id || d.id,
             name: d.name,
-            type: d.type
+            type: d.type,
+            owner: d.owner || '',
+            assignedToName: '',
           }));
           this.devices.set(mappedDevices);
         }),
@@ -193,17 +205,6 @@ export class TicketsComponent implements OnInit {
     }
   }
 
-  loadITStaff() {
-    this.apiService.getUsers().subscribe({
-      next: (users) => {
-        this.itStaff.set(users.filter(u => u.role === 'IT' || u.role === 'ADMIN'));
-      },
-      error: () => {
-        this.itStaff.set([]);
-      }
-    });
-  }
-
   openCreateModal(preselectedDeviceId?: string) {
     this.loadDevices().subscribe(() => {
       this.createForm.set({
@@ -213,6 +214,13 @@ export class TicketsComponent implements OnInit {
         issueType: IssueType.DAMAGED,
         priority: TicketPriority.MEDIUM,
       });
+      if (preselectedDeviceId) {
+        const device = this.devices().find(d => d.id === preselectedDeviceId);
+        this.deviceSearchTerm.set(device ? `${device.name} (${device.type})` : '');
+      } else {
+        this.deviceSearchTerm.set('');
+      }
+      this.showDeviceDropdown.set(false);
       this.createError.set(null);
       this.showCreateModal.set(true);
     });
@@ -227,6 +235,8 @@ export class TicketsComponent implements OnInit {
       issueType: IssueType.DAMAGED,
       priority: TicketPriority.MEDIUM,
     });
+    this.deviceSearchTerm.set('');
+    this.showDeviceDropdown.set(false);
     this.createError.set(null);
   }
 
@@ -260,130 +270,146 @@ export class TicketsComponent implements OnInit {
   }
 
   openTicketDetail(ticket: Ticket) {
-    this.selectedTicket.set(ticket);
-    this.showDetailModal.set(true);
-    this.newComment.set('');
+    const base = this.isMyTicketsView() ? '/my-tickets' : '/tickets';
+    this.router.navigate([base, ticket._id]);
+  }
+
+  selectDevice(device: Device) {
+    this.createForm.update(f => ({ ...f, deviceId: device.id }));
+    this.deviceSearchTerm.set(`${device.name} (${device.type})`);
+    this.showDeviceDropdown.set(false);
+  }
+
+  onDeviceSearchFocus() {
+    this.showDeviceDropdown.set(true);
+  }
+
+  onDeviceSearchInput(value: string) {
+    this.deviceSearchTerm.set(value);
+    this.showDeviceDropdown.set(true);
+    if (!value) {
+      this.createForm.update(f => ({ ...f, deviceId: '' }));
+    }
+  }
+
+  getSelectedDeviceName(): string {
+    const deviceId = this.createForm().deviceId;
+    if (!deviceId) return '';
+    const device = this.devices().find(d => d.id === deviceId);
+    return device ? `${device.name} (${device.type})` : '';
+  }
+
+  closeDeviceDropdown() {
+    setTimeout(() => this.showDeviceDropdown.set(false), 200);
   }
 
   closeDetailModal() {
     this.showDetailModal.set(false);
-    this.selectedTicket.set(null);
   }
 
   async updateTicketStatus(status: TicketStatus, resolution?: ResolutionType) {
     const ticket = this.selectedTicket();
     if (!ticket) return;
-
-    this.statusLoading.set(true);
     try {
-      const updateData: UpdateTicketStatusDto = { status };
-      if (resolution) {
-        updateData.resolution = resolution;
-      }
-      const updatedTicket = await firstValueFrom(this.apiService.updateTicketStatus(ticket._id, updateData));
-      this.selectedTicket.set(updatedTicket);
-      
-      // Update the ticket in the local array instead of refetching the entire list
-      this.tickets.update(tickets => 
-        tickets.map(t => t._id === updatedTicket._id ? updatedTicket : t)
-      );
-    } catch (err) {
+      const body: any = { status };
+      if (resolution) body.resolution = resolution;
+      const updated = await firstValueFrom(this.apiService.updateTicketStatus(ticket._id, body));
+      this.selectedTicket.set(updated);
+    } catch {
       this.error.set('Failed to update ticket status');
-    } finally {
-      this.statusLoading.set(false);
     }
   }
 
-  async assignTicket(userId: string) {
+  async assignTicket(staffId: string) {
     const ticket = this.selectedTicket();
     if (!ticket) return;
-
-    this.assignLoading.set(true);
     try {
-      const updatedTicket = await firstValueFrom(this.apiService.assignTicket(ticket._id, { assignedTo: userId }));
-      this.selectedTicket.set(updatedTicket);
-      
-      // Update the ticket in the local array instead of refetching the entire list
-      this.tickets.update(tickets => 
-        tickets.map(t => t._id === updatedTicket._id ? updatedTicket : t)
-      );
-    } catch (err) {
+      const updated = await firstValueFrom(this.apiService.assignTicket(ticket._id, { assignedTo: staffId }));
+      this.selectedTicket.set(updated);
+    } catch {
       this.error.set('Failed to assign ticket');
-    } finally {
-      this.assignLoading.set(false);
     }
-  }
-
-  onAssignChange(event: Event): void {
-    const value = (event.target as HTMLSelectElement).value;
-    this.assignTicket(value);
   }
 
   async addComment() {
     const ticket = this.selectedTicket();
-    const comment = this.newComment();
-    if (!ticket || !comment.trim()) return;
-
-    this.commentLoading.set(true);
+    if (!ticket || !this.newComment().trim()) return;
     try {
-      const updatedTicket = await firstValueFrom(this.apiService.addTicketComment(ticket._id, { text: comment }));
+      const updated = await firstValueFrom(this.apiService.addTicketComment(ticket._id, { text: this.newComment() }));
+      this.selectedTicket.set(updated);
       this.newComment.set('');
-      this.selectedTicket.set(updatedTicket);
-      
-      // Update the ticket in the local array instead of refetching the entire list
-      this.tickets.update(tickets => 
-        tickets.map(t => t._id === updatedTicket._id ? updatedTicket : t)
-      );
-    } catch (err) {
-      this.error.set('Failed to add comment');
-    } finally {
-      this.commentLoading.set(false);
-    }
-  }
-
-  getCurrentUserInitials(): string {
-    const userJson = localStorage.getItem('user');
-    if (!userJson) return '?';
-    try {
-      const user = JSON.parse(userJson);
-      const prenom = user.prenom || '';
-      const nom = user.nom || '';
-      return (prenom.charAt(0) + nom.charAt(0)).toUpperCase();
     } catch {
-      return '?';
+      this.error.set('Failed to add comment');
     }
-  }
-
-  getStaffDisplayName(staff: User): string {
-    const fullName = `${staff.prenom || ''} ${staff.nom || ''}`.trim();
-    if (fullName && fullName.length > 1) {
-      return fullName;
-    }
-    return staff.email || 'Utilisateur inconnu';
   }
 
   async deleteTicket() {
     const ticket = this.selectedTicket();
     if (!ticket) return;
-
-    if (!confirm('Êtes-vous sûr de vouloir supprimer ce ticket ? Cette action est irréversible.')) {
-      return;
-    }
-
-    this.deleteLoading.set(true);
+    if (!confirm('Are you sure you want to delete this ticket?')) return;
     try {
       await firstValueFrom(this.apiService.deleteTicket(ticket._id));
-      this.closeDetailModal();
+      this.showDetailModal.set(false);
       this.loadTickets();
-    } catch (err) {
+    } catch {
       this.error.set('Failed to delete ticket');
-    } finally {
-      this.deleteLoading.set(false);
     }
+  }
+
+  getIssueTypeLabel(type: IssueType): string {
+    const labels: Record<string, string> = {
+      [IssueType.DAMAGED]: 'Endommagé',
+      [IssueType.DESTROYED]: 'Détruit',
+      [IssueType.MALFUNCTION]: 'Dysfonctionnement',
+      [IssueType.OTHER]: 'Autre',
+    };
+    return labels[type] || type;
+  }
+
+  getResolutionLabel(resolution?: ResolutionType): string {
+    const labels: Record<string, string> = {
+      [ResolutionType.REPAIR]: 'Réparation',
+      [ResolutionType.REPLACE]: 'Remplacement',
+    };
+    return resolution ? (labels[resolution] || resolution) : '';
+  }
+
+  getStaffDisplayName(staff: any): string {
+    if (staff.prenom || staff.nom) {
+      return `${staff.prenom || ''} ${staff.nom || ''}`.trim();
+    }
+    return staff.email || 'Utilisateur inconnu';
+  }
+
+  getCurrentUserInitials(): string {
+    try {
+      const userStr = localStorage.getItem('user');
+      if (!userStr) return '?';
+      const user = JSON.parse(userStr);
+      return ((user.prenom?.[0] || '') + (user.nom?.[0] || '')).toUpperCase() || '?';
+    } catch {
+      return '?';
+    }
+  }
+
+  loadITStaff() {
+    this.apiService.getUsers().subscribe({
+      next: (users: any[]) => {
+        this.itStaff.set(users.filter((u: any) => u.role === 'IT'));
+      },
+      error: () => {
+        this.itStaff.set([]);
+      }
+    });
   }
 
   onFilterChange() {
     this.currentPage.set(1);
+    this.loadTickets();
+  }
+
+  toggleSortOrder() {
+    this.sortOrder.set(this.sortOrder() === 'desc' ? 'asc' : 'desc');
     this.loadTickets();
   }
 
@@ -399,11 +425,10 @@ export class TicketsComponent implements OnInit {
   }
 
   getStatusLabel(status: TicketStatus): string {
-    const labels = {
+    const labels: Record<string, string> = {
       [TicketStatus.OPEN]: 'Nouveau',
       [TicketStatus.IN_PROGRESS]: 'En cours',
       [TicketStatus.RESOLVED]: 'Résolu',
-      [TicketStatus.CLOSED]: 'Fermé',
     };
     return labels[status] || status;
   }
@@ -416,8 +441,6 @@ export class TicketsComponent implements OnInit {
         return 'bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-900/30 dark:text-sky-300 dark:border-sky-800';
       case TicketStatus.RESOLVED:
         return 'bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-800';
-      case TicketStatus.CLOSED:
-        return 'bg-gray-50 text-gray-700 border-gray-200 dark:bg-gray-900/30 dark:text-gray-300 dark:border-gray-800';
       default:
         return 'bg-gray-50 text-gray-700 border-gray-200 dark:bg-gray-900/30 dark:text-gray-300 dark:border-gray-800';
     }
@@ -448,30 +471,11 @@ export class TicketsComponent implements OnInit {
     }
   }
 
-  getIssueTypeLabel(issueType: IssueType): string {
-    const labels = {
-      [IssueType.DAMAGED]: 'Endommagé',
-      [IssueType.DESTROYED]: 'Détruit',
-      [IssueType.MALFUNCTION]: 'Dysfonctionnement',
-      [IssueType.OTHER]: 'Autre',
-    };
-    return labels[issueType] || issueType;
-  }
-
-  getResolutionLabel(resolution?: ResolutionType): string {
-    if (!resolution) return '';
-    const labels = {
-      [ResolutionType.REPAIR]: 'Réparation',
-      [ResolutionType.REPLACE]: 'Remplacement',
-    };
-    return labels[resolution] || resolution;
-  }
-
   // Stats for IT/ADMIN view
   openTickets = computed(() => this.tickets().filter(t => t.status === TicketStatus.OPEN).length);
-  urgentTickets = computed(() => this.tickets().filter(t => t.priority === TicketPriority.URGENT && t.status !== TicketStatus.CLOSED).length);
+  urgentTickets = computed(() => this.tickets().filter(t => t.priority === TicketPriority.URGENT && t.status !== TicketStatus.RESOLVED).length);
   inProgressTickets = computed(() => this.tickets().filter(t => t.status === TicketStatus.IN_PROGRESS).length);
-  resolvedTickets = computed(() => this.tickets().filter(t => t.status === TicketStatus.RESOLVED || t.status === TicketStatus.CLOSED).length);
+  resolvedTickets = computed(() => this.tickets().filter(t => t.status === TicketStatus.RESOLVED).length);
 
   formatDate(dateString: string | Date): string {
     return new Date(dateString).toLocaleString('fr-FR');

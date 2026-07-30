@@ -38,7 +38,12 @@ export class AuthCallbackComponent implements OnInit {
           localStorage.setItem('user_prenom', prenom || '');
           localStorage.setItem('user_email', email || '');
           localStorage.setItem('user_id', userId || '');
-          this.router.navigate(['/']);
+
+          if (role === 'CONSULTANT') {
+            this.router.navigate(['/consultant-devices']);
+          } else {
+            this.router.navigate(['/']);
+          }
         }
       } else {
         this.router.navigate(['/signin']);

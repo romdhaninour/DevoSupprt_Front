@@ -134,7 +134,7 @@ export class DeviceAllocationComponent implements OnInit {
       },
       error: () => {
         this.loading.set(false);
-        this.setMessage('Impossible d’attribuer cet appareil.', 'error');
+        this.setMessage("Impossible d'attribuer cet appareil.", 'error');
       }
     });
   }

@@ -11,6 +11,8 @@ export interface Notification {
   userEmail: string;
   userName?: string;
   recipientRoles: string[];
+  referenceId?: string;
+  referenceModel?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -127,6 +129,20 @@ export class NotificationService {
         },
         error: (error) => {
           console.error('Failed to mark all notifications as read:', error);
+        }
+      });
+  }
+
+  deleteNotification(id: string) {
+    this.http.delete(`${this.apiUrl}/notifications/${id}`, this.getAuthHeaders())
+      .subscribe({
+        next: () => {
+          this.notificationsSignal.update(current =>
+            current.filter(n => n._id !== id)
+          );
+        },
+        error: (error) => {
+          console.error('Failed to delete notification:', error);
         }
       });
   }

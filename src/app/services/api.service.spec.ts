@@ -570,5 +570,206 @@ describe('ApiService', () => {
         req.flush(returnedDevice);
       });
     });
+
+    describe('getAssignedDevices', () => {
+      it('should return assigned devices', () => {
+        const response = { devices: [mockDevice], total: 1, page: 1, limit: 10 };
+
+        service.getAssignedDevices().subscribe(res => {
+          expect(res).toEqual(response);
+        });
+
+        const req = httpMock.expectOne('http://localhost:3000/devices/assigned');
+        expect(req.request.method).toBe('GET');
+        req.flush(response);
+      });
+
+      it('should include pagination and search params', () => {
+        service.getAssignedDevices(1, 10, 'test', 'user1').subscribe();
+
+        const req = httpMock.expectOne('http://localhost:3000/devices/assigned?page=1&limit=10&search=test&userId=user1');
+        expect(req.request.method).toBe('GET');
+        req.flush({ devices: [], total: 0, page: 1, limit: 10 });
+      });
+    });
+
+    describe('updateDeviceStatus', () => {
+      it('should update device status', () => {
+        service.updateDeviceStatus('d1', 'maintenance').subscribe();
+
+        const req = httpMock.expectOne('http://localhost:3000/devices/d1/status');
+        expect(req.request.method).toBe('PATCH');
+        expect(req.request.body).toEqual({ status: 'maintenance' });
+        req.flush({});
+      });
+    });
+
+    describe('getConsultants', () => {
+      it('should return consultants', () => {
+        service.getConsultants().subscribe(users => {
+          expect(users).toEqual([mockUser]);
+        });
+
+        const req = httpMock.expectOne('http://localhost:3000/users/consultants');
+        expect(req.request.method).toBe('GET');
+        req.flush([mockUser]);
+      });
+    });
+
+    describe('getDashboardStats', () => {
+      it('should return dashboard stats', () => {
+        const stats = { totalTickets: 10, totalDevices: 5 };
+        service.getDashboardStats().subscribe(res => {
+          expect(res).toEqual(stats);
+        });
+
+        const req = httpMock.expectOne('http://localhost:3000/dashboard/stats');
+        expect(req.request.method).toBe('GET');
+        req.flush(stats);
+      });
+
+      it('should include Authorization header', () => {
+        localStorage.setItem('auth_token', 'test-token');
+        service.getDashboardStats().subscribe();
+
+        const req = httpMock.expectOne('http://localhost:3000/dashboard/stats');
+        expect(req.request.headers.get('Authorization')).toBe('Bearer test-token');
+        localStorage.removeItem('auth_token');
+      });
+    });
+
+    describe('getCurrentUser', () => {
+      it('should return current user', () => {
+        service.getCurrentUser().subscribe(user => {
+          expect(user).toEqual(mockUser);
+        });
+
+        const req = httpMock.expectOne('http://localhost:3000/users/me/profile');
+        expect(req.request.method).toBe('GET');
+        req.flush(mockUser);
+      });
+    });
+
+    describe('getUserById', () => {
+      it('should return user by id', () => {
+        service.getUserById('507f1f77bcf86cd799439011').subscribe(user => {
+          expect(user).toEqual(mockUser);
+        });
+
+        const req = httpMock.expectOne('http://localhost:3000/users/507f1f77bcf86cd799439011');
+        expect(req.request.method).toBe('GET');
+        req.flush(mockUser);
+      });
+    });
+
+    describe('importUsers', () => {
+      it('should import users from file', () => {
+        const file = new File(['data'], 'users.xlsx', { type: 'application/octet-stream' });
+        const importResult = { success: 5, failed: 1, errors: ['Invalid row'] };
+
+        service.importUsers(file).subscribe(result => {
+          expect(result).toEqual(importResult);
+        });
+
+        const req = httpMock.expectOne('http://localhost:3000/users/import');
+        expect(req.request.method).toBe('POST');
+        req.flush(importResult);
+      });
+    });
+
+    describe('exportUsers', () => {
+      it('should export users', () => {
+        const blob = new Blob(['data']);
+        service.exportUsers().subscribe(result => {
+          expect(result).toBe(blob);
+        });
+
+        const req = httpMock.expectOne('http://localhost:3000/users/export');
+        expect(req.request.method).toBe('POST');
+        req.flush(blob);
+      });
+
+      it('should include search in body', () => {
+        service.exportUsers('test').subscribe();
+
+        const req = httpMock.expectOne('http://localhost:3000/users/export');
+        expect(req.request.body).toEqual({ search: 'test' });
+        req.flush(new Blob());
+      });
+    });
+
+    describe('importDevices', () => {
+      it('should import devices from file', () => {
+        const file = new File(['data'], 'devices.xlsx', { type: 'application/octet-stream' });
+        const importResult = { success: 3, failed: 0, errors: [] };
+
+        service.importDevices(file).subscribe(result => {
+          expect(result).toEqual(importResult);
+        });
+
+        const req = httpMock.expectOne('http://localhost:3000/devices/import');
+        expect(req.request.method).toBe('POST');
+        req.flush(importResult);
+      });
+    });
+
+    describe('exportDevices', () => {
+      it('should export devices', () => {
+        const blob = new Blob(['data']);
+        service.exportDevices().subscribe(result => {
+          expect(result).toBe(blob);
+        });
+
+        const req = httpMock.expectOne('http://localhost:3000/devices/export');
+        expect(req.request.method).toBe('POST');
+        req.flush(blob);
+      });
+
+      it('should include search in body', () => {
+        service.exportDevices('laptop').subscribe();
+
+        const req = httpMock.expectOne('http://localhost:3000/devices/export');
+        expect(req.request.body).toEqual({ search: 'laptop' });
+        req.flush(new Blob());
+      });
+    });
+
+    describe('getDevices with status all', () => {
+      it('should not include status param when status is all', () => {
+        service.getDevices(1, 10, '', 'all', 'all').subscribe();
+
+        const req = httpMock.expectOne('http://localhost:3000/devices?page=1&limit=10');
+        expect(req.request.method).toBe('GET');
+        req.flush({ devices: [], total: 0, page: 1, limit: 10 });
+      });
+    });
+
+    describe('getDevices with only status filter', () => {
+      it('should include status but not type when type is all', () => {
+        service.getDevices(1, 10, '', 'available', 'all').subscribe();
+
+        const req = httpMock.expectOne('http://localhost:3000/devices?page=1&limit=10&status=available');
+        expect(req.request.method).toBe('GET');
+        req.flush({ devices: [], total: 0, page: 1, limit: 10 });
+      });
+    });
+
+    describe('getTickets with mine filter', () => {
+      it('should include mine=true when mine is true', () => {
+        service.getTickets(undefined, undefined, undefined, undefined, undefined, true).subscribe();
+
+        const req = httpMock.expectOne('http://localhost:3000/tickets?mine=true');
+        expect(req.request.method).toBe('GET');
+        req.flush({ tickets: [], total: 0 });
+      });
+
+      it('should include date filters', () => {
+        service.getTickets(undefined, undefined, undefined, '2024-01-01', '2024-12-31').subscribe();
+
+        const req = httpMock.expectOne('http://localhost:3000/tickets?startDate=2024-01-01&endDate=2024-12-31');
+        expect(req.request.method).toBe('GET');
+        req.flush({ tickets: [], total: 0 });
+      });
+    });
   });
 });

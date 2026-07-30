@@ -1,6 +1,6 @@
 import { Component, OnInit, signal, computed, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { RouterModule, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../services/api.service';
 import { User } from '../../models/user.model';
@@ -38,6 +38,7 @@ export class ArchivedUsersComponent implements OnInit {
   error = signal<string | null>(null);
   searchTerm = signal('');
   roleFilter = signal<string>('all');
+  sortOrder = signal<'desc' | 'asc'>('desc');
   
   // Pagination
   currentPage = 1;
@@ -69,6 +70,11 @@ export class ArchivedUsersComponent implements OnInit {
     this.roleFilter.set(role);
     this.currentPage = 1;
   }
+
+  toggleSortOrder() {
+    this.sortOrder.set(this.sortOrder() === 'desc' ? 'asc' : 'desc');
+    this.loadArchivedUsers();
+  }
   
   deleteModalOpen = signal(false);
   restoreModalOpen = signal(false);
@@ -76,7 +82,7 @@ export class ArchivedUsersComponent implements OnInit {
   openActionMenuId = signal<string | null>(null);
   actionMenuPosition = signal<{ top: number; left: number } | null>(null);
 
-  constructor(private apiService: ApiService) {}
+  constructor(private apiService: ApiService, private router: Router) {}
 
   getRoleBadgeColor(role: string): string {
     switch (role?.toUpperCase()) {
@@ -132,7 +138,7 @@ export class ArchivedUsersComponent implements OnInit {
   loadArchivedUsers() {
     this.loading.set(true);
     this.error.set(null);
-    this.apiService.getArchivedUsers().subscribe({
+    this.apiService.getArchivedUsers(this.sortOrder()).subscribe({
       next: (data) => {
         this.users.set(data);
         this.loading.set(false);
@@ -213,5 +219,9 @@ export class ArchivedUsersComponent implements OnInit {
         fallback.style.display = 'none';
       }
     }
+  }
+
+  navigateToUser(userId: string) {
+    this.router.navigate(['/archived-users', userId]);
   }
 }

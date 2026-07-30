@@ -1,10 +1,11 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { ReactiveFormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { of, throwError } from 'rxjs';
 import { TicketsComponent } from './tickets.component';
 import { ApiService } from '../../services/api.service';
 import { TicketStatus, TicketPriority, IssueType, ResolutionType } from '../../models/ticket.model';
 import { User } from '../../models/user.model';
+import { NO_ERRORS_SCHEMA } from '@angular/core';
 
 describe('TicketsComponent', () => {
   let component: TicketsComponent;
@@ -53,28 +54,35 @@ describe('TicketsComponent', () => {
       'deleteTicket',
       'getUsers',
       'getConsultants',
+      'getDevices',
+      'getAssignedDevices',
     ]);
 
+    const mockActivatedRoute = {
+      url: of([]),
+      queryParams: of({}),
+    };
+
     await TestBed.configureTestingModule({
-      imports: [ReactiveFormsModule],
-      declarations: [TicketsComponent],
+      imports: [TicketsComponent],
       providers: [
         { provide: ApiService, useValue: spy },
+        { provide: ActivatedRoute, useValue: mockActivatedRoute },
       ],
+      schemas: [NO_ERRORS_SCHEMA]
     }).compileComponents();
 
     fixture = TestBed.createComponent(TicketsComponent);
     component = fixture.componentInstance;
     apiServiceSpy = TestBed.inject(ApiService) as jasmine.SpyObj<ApiService>;
 
-    // Set up localStorage mock
-    spyOn(localStorage, 'getItem').and.callFake((key: string) => {
-      if (key === 'user_role') return 'ADMIN';
-      if (key === 'user') return JSON.stringify(mockUser);
-      return null;
-    });
-    spyOn(localStorage, 'setItem');
-    spyOn(localStorage, 'removeItem');
+    localStorage.setItem('user_role', 'ADMIN');
+    localStorage.setItem('user', JSON.stringify(mockUser));
+  });
+
+  afterEach(() => {
+    localStorage.removeItem('user_role');
+    localStorage.removeItem('user');
   });
 
   it('should create', () => {
@@ -94,6 +102,7 @@ describe('TicketsComponent', () => {
       apiServiceSpy.getTickets.and.returnValue(of({ tickets: [], total: 0 }));
       apiServiceSpy.getUsers.and.returnValue(of(mockITStaff));
       
+      component.userRole.set('ADMIN');
       component.ngOnInit();
       
       expect(apiServiceSpy.getUsers).toHaveBeenCalled();
@@ -126,12 +135,14 @@ describe('TicketsComponent', () => {
       
       component.loadTickets();
       
-      expect(apiServiceSpy.getTickets).toHaveBeenCalledWith('OPEN', 'HIGH', undefined, undefined, undefined);
+      expect(apiServiceSpy.getTickets).toHaveBeenCalledWith('OPEN', 'HIGH', undefined, undefined, undefined, false, 'desc');
     });
   });
 
   describe('openCreateModal', () => {
     it('should open create modal and reset form', () => {
+      apiServiceSpy.getAssignedDevices.and.returnValue(of({ devices: [], total: 0, page: 1, limit: 1000 }));
+
       component.openCreateModal();
       
       expect(component.showCreateModal()).toBe(true);
@@ -155,7 +166,7 @@ describe('TicketsComponent', () => {
   });
 
   describe('createTicket', () => {
-    it('should create a ticket successfully', () => {
+    it('should create a ticket successfully', async () => {
       apiServiceSpy.createTicket.and.returnValue(of(mockTicket));
       apiServiceSpy.getTickets.and.returnValue(of({ tickets: [mockTicket], total: 1 }));
       
@@ -167,13 +178,13 @@ describe('TicketsComponent', () => {
         priority: TicketPriority.MEDIUM,
       });
       
-      component.createTicket();
+      await component.createTicket();
       
       expect(apiServiceSpy.createTicket).toHaveBeenCalled();
       expect(component.showCreateModal()).toBe(false);
     });
 
-    it('should not create ticket if form is invalid', () => {
+    it('should not create ticket if form is invalid', async () => {
       component.createForm.set({
         title: '',
         description: '',
@@ -182,12 +193,12 @@ describe('TicketsComponent', () => {
         priority: TicketPriority.MEDIUM,
       });
       
-      component.createTicket();
+      await component.createTicket();
       
       expect(apiServiceSpy.createTicket).not.toHaveBeenCalled();
     });
 
-    it('should handle errors when creating ticket', () => {
+    it('should handle errors when creating ticket', async () => {
       apiServiceSpy.createTicket.and.returnValue(throwError(() => new Error('Error')));
       
       component.createForm.set({
@@ -198,7 +209,7 @@ describe('TicketsComponent', () => {
         priority: TicketPriority.MEDIUM,
       });
       
-      component.createTicket();
+      await component.createTicket();
       
       expect(component.createError()).toBe('Failed to create ticket');
     });
@@ -214,12 +225,12 @@ describe('TicketsComponent', () => {
   });
 
   describe('updateTicketStatus', () => {
-    it('should update ticket status', () => {
+    it('should update ticket status', async () => {
       const updatedTicket = { ...mockTicket, status: TicketStatus.IN_PROGRESS };
       apiServiceSpy.updateTicketStatus.and.returnValue(of(updatedTicket));
       
       component.selectedTicket.set(mockTicket);
-      component.updateTicketStatus(TicketStatus.IN_PROGRESS);
+      await component.updateTicketStatus(TicketStatus.IN_PROGRESS);
       
       expect(apiServiceSpy.updateTicketStatus).toHaveBeenCalledWith(
         mockTicket._id,
@@ -228,12 +239,12 @@ describe('TicketsComponent', () => {
       expect(component.selectedTicket()).toEqual(updatedTicket);
     });
 
-    it('should update ticket status with resolution', () => {
+    it('should update ticket status with resolution', async () => {
       const updatedTicket = { ...mockTicket, status: TicketStatus.RESOLVED, resolution: ResolutionType.REPAIR };
       apiServiceSpy.updateTicketStatus.and.returnValue(of(updatedTicket));
       
       component.selectedTicket.set(mockTicket);
-      component.updateTicketStatus(TicketStatus.RESOLVED, ResolutionType.REPAIR);
+      await component.updateTicketStatus(TicketStatus.RESOLVED, ResolutionType.REPAIR);
       
       expect(apiServiceSpy.updateTicketStatus).toHaveBeenCalledWith(
         mockTicket._id,
@@ -241,23 +252,23 @@ describe('TicketsComponent', () => {
       );
     });
 
-    it('should handle errors when updating status', () => {
+    it('should handle errors when updating status', async () => {
       apiServiceSpy.updateTicketStatus.and.returnValue(throwError(() => new Error('Error')));
       
       component.selectedTicket.set(mockTicket);
-      component.updateTicketStatus(TicketStatus.IN_PROGRESS);
+      await component.updateTicketStatus(TicketStatus.IN_PROGRESS);
       
       expect(component.error()).toBe('Failed to update ticket status');
     });
   });
 
   describe('assignTicket', () => {
-    it('should assign ticket to user', () => {
+    it('should assign ticket to user', async () => {
       const assignedTicket = { ...mockTicket, assignedTo: mockITStaff[0] };
       apiServiceSpy.assignTicket.and.returnValue(of(assignedTicket));
       
       component.selectedTicket.set(mockTicket);
-      component.assignTicket(mockITStaff[0]._id);
+      await component.assignTicket(mockITStaff[0]._id);
       
       expect(apiServiceSpy.assignTicket).toHaveBeenCalledWith(
         mockTicket._id,
@@ -266,28 +277,28 @@ describe('TicketsComponent', () => {
       expect(component.selectedTicket()).toEqual(assignedTicket);
     });
 
-    it('should handle errors when assigning ticket', () => {
+    it('should handle errors when assigning ticket', async () => {
       apiServiceSpy.assignTicket.and.returnValue(throwError(() => new Error('Error')));
       
       component.selectedTicket.set(mockTicket);
-      component.assignTicket(mockITStaff[0]._id);
+      await component.assignTicket(mockITStaff[0]._id);
       
       expect(component.error()).toBe('Failed to assign ticket');
     });
   });
 
   describe('addComment', () => {
-    it('should add comment to ticket', () => {
+    it('should add comment to ticket', async () => {
       const ticketWithComment = {
         ...mockTicket,
-        comments: [{ author: mockUser, text: 'Test comment', createdAt: new Date() }]
+        comments: [{ author: mockUser, text: 'Test comment', createdAt: new Date().toISOString() }]
       };
       apiServiceSpy.addTicketComment.and.returnValue(of(ticketWithComment));
       
       component.selectedTicket.set(mockTicket);
       component.newComment.set('Test comment');
       
-      component.addComment();
+      await component.addComment();
       
       expect(apiServiceSpy.addTicketComment).toHaveBeenCalledWith(
         mockTicket._id,
@@ -296,55 +307,55 @@ describe('TicketsComponent', () => {
       expect(component.newComment()).toBe('');
     });
 
-    it('should not add empty comment', () => {
+    it('should not add empty comment', async () => {
       component.selectedTicket.set(mockTicket);
       component.newComment.set('');
       
-      component.addComment();
+      await component.addComment();
       
       expect(apiServiceSpy.addTicketComment).not.toHaveBeenCalled();
     });
 
-    it('should handle errors when adding comment', () => {
+    it('should handle errors when adding comment', async () => {
       apiServiceSpy.addTicketComment.and.returnValue(throwError(() => new Error('Error')));
       
       component.selectedTicket.set(mockTicket);
       component.newComment.set('Test comment');
       
-      component.addComment();
+      await component.addComment();
       
       expect(component.error()).toBe('Failed to add comment');
     });
   });
 
   describe('deleteTicket', () => {
-    it('should delete ticket and close modal', () => {
+    it('should delete ticket and close modal', async () => {
       apiServiceSpy.deleteTicket.and.returnValue(of({ message: 'Ticket deleted successfully' }));
       apiServiceSpy.getTickets.and.returnValue(of({ tickets: [], total: 0 }));
       spyOn(window, 'confirm').and.returnValue(true);
       
       component.selectedTicket.set(mockTicket);
-      component.deleteTicket();
+      await component.deleteTicket();
       
       expect(apiServiceSpy.deleteTicket).toHaveBeenCalledWith(mockTicket._id);
       expect(component.showDetailModal()).toBe(false);
     });
 
-    it('should not delete ticket if user cancels confirmation', () => {
+    it('should not delete ticket if user cancels confirmation', async () => {
       spyOn(window, 'confirm').and.returnValue(false);
       
       component.selectedTicket.set(mockTicket);
-      component.deleteTicket();
+      await component.deleteTicket();
       
       expect(apiServiceSpy.deleteTicket).not.toHaveBeenCalled();
     });
 
-    it('should handle errors when deleting ticket', () => {
+    it('should handle errors when deleting ticket', async () => {
       apiServiceSpy.deleteTicket.and.returnValue(throwError(() => new Error('Error')));
       spyOn(window, 'confirm').and.returnValue(true);
       
       component.selectedTicket.set(mockTicket);
-      component.deleteTicket();
+      await component.deleteTicket();
       
       expect(component.error()).toBe('Failed to delete ticket');
     });
@@ -355,7 +366,6 @@ describe('TicketsComponent', () => {
       expect(component.getStatusLabel(TicketStatus.OPEN)).toBe('Nouveau');
       expect(component.getStatusLabel(TicketStatus.IN_PROGRESS)).toBe('En cours');
       expect(component.getStatusLabel(TicketStatus.RESOLVED)).toBe('Résolu');
-      expect(component.getStatusLabel(TicketStatus.CLOSED)).toBe('Fermé');
     });
   });
 
@@ -406,27 +416,24 @@ describe('TicketsComponent', () => {
     });
 
     it('should return ? when user data is not available', () => {
-      spyOn(localStorage, 'getItem').and.returnValue(null);
+      localStorage.removeItem('user');
       expect(component.getCurrentUserInitials()).toBe('?');
     });
   });
 
   describe('isIT', () => {
     it('should return true for IT role', () => {
-      spyOn(localStorage, 'getItem').and.returnValue('IT');
-      component.ngOnInit();
+      component.userRole.set('IT');
       expect(component.isIT()).toBe(true);
     });
 
     it('should return true for ADMIN role', () => {
-      spyOn(localStorage, 'getItem').and.returnValue('ADMIN');
-      component.ngOnInit();
+      component.userRole.set('ADMIN');
       expect(component.isIT()).toBe(true);
     });
 
     it('should return false for CONSULTANT role', () => {
-      spyOn(localStorage, 'getItem').and.returnValue('CONSULTANT');
-      component.ngOnInit();
+      component.userRole.set('CONSULTANT');
       expect(component.isIT()).toBe(false);
     });
   });
@@ -436,7 +443,6 @@ describe('TicketsComponent', () => {
       expect(component.getStatusClass(TicketStatus.OPEN)).toContain('bg-emerald');
       expect(component.getStatusClass(TicketStatus.IN_PROGRESS)).toContain('bg-sky');
       expect(component.getStatusClass(TicketStatus.RESOLVED)).toContain('bg-violet');
-      expect(component.getStatusClass(TicketStatus.CLOSED)).toContain('bg-gray');
     });
   });
 
@@ -444,7 +450,213 @@ describe('TicketsComponent', () => {
     it('should return correct CSS classes for each priority', () => {
       expect(component.getPriorityClass(TicketPriority.LOW)).toContain('bg-blue');
       expect(component.getPriorityClass(TicketPriority.MEDIUM)).toContain('bg-amber');
-      expect(component.getPriorityClass(TicketPriority.HIGH)).toContain('bg-red');
+      expect(component.getPriorityClass(TicketPriority.HIGH)).toContain('bg-orange');
+      expect(component.getPriorityClass(TicketPriority.URGENT)).toContain('bg-rose');
+    });
+
+    it('should return default class for unknown priority', () => {
+      expect(component.getPriorityClass('unknown' as any)).toContain('bg-gray');
+    });
+  });
+
+  describe('getStatusClass default', () => {
+    it('should return default class for unknown status', () => {
+      expect(component.getStatusClass('unknown' as any)).toContain('bg-gray');
+    });
+  });
+
+  describe('getResolutionLabel', () => {
+    it('should return empty string for undefined resolution', () => {
+      expect(component.getResolutionLabel(undefined)).toBe('');
+    });
+  });
+
+  describe('getStatusLabel', () => {
+    it('should return raw status for unknown status', () => {
+      expect(component.getStatusLabel('unknown' as any)).toBe('unknown');
+    });
+  });
+
+  describe('getPriorityLabel', () => {
+    it('should return raw priority for unknown priority', () => {
+      expect(component.getPriorityLabel('unknown' as any)).toBe('unknown');
+    });
+  });
+
+  describe('openTicketDetail', () => {
+    it('should open detail modal with selected ticket', () => {
+      component.openTicketDetail(mockTicket);
+      expect(component.selectedTicket()).toEqual(mockTicket);
+      expect(component.showDetailModal()).toBe(true);
+      expect(component.newComment()).toBe('');
+    });
+  });
+
+  describe('onFilterChange', () => {
+    it('should reset page to 1 and reload tickets', () => {
+      component.currentPage.set(5);
+      apiServiceSpy.getTickets.and.returnValue(of({ tickets: [], total: 0 }));
+
+      component.onFilterChange();
+
+      expect(component.currentPage()).toBe(1);
+    });
+  });
+
+  describe('goToPage', () => {
+    it('should navigate to valid page', () => {
+      component.tickets.set(Array.from({ length: 25 }, (_, i) => ({ ...mockTicket, _id: `t${i}` })));
+      component.goToPage(2);
+      expect(component.currentPage()).toBe(2);
+    });
+
+    it('should not navigate to invalid page', () => {
+      component.currentPage.set(1);
+      component.goToPage(0);
+      expect(component.currentPage()).toBe(1);
+    });
+
+    it('should not navigate beyond total pages', () => {
+      component.tickets.set([{ ...mockTicket }]);
+      component.currentPage.set(1);
+      component.goToPage(100);
+      expect(component.currentPage()).toBe(1);
+    });
+  });
+
+  describe('getDisplayRangeEnd', () => {
+    it('should return correct display range end', () => {
+      component.tickets.set(Array.from({ length: 25 }, (_, i) => ({ ...mockTicket, _id: `t${i}` })));
+      component.currentPage.set(2);
+      expect(component.getDisplayRangeEnd()).toBe(20);
+    });
+  });
+
+  describe('formatDate', () => {
+    it('should format date to French locale', () => {
+      const result = component.formatDate('2024-01-15T10:30:00Z');
+      expect(result).toBeTruthy();
+    });
+  });
+
+  describe('computed values', () => {
+    it('should compute open tickets count', () => {
+      component.tickets.set([
+        { ...mockTicket, status: TicketStatus.OPEN, _id: '1' },
+        { ...mockTicket, status: TicketStatus.OPEN, _id: '2' },
+        { ...mockTicket, status: TicketStatus.RESOLVED, _id: '3' },
+      ]);
+      expect(component.openTickets()).toBe(2);
+    });
+
+    it('should compute in progress tickets count', () => {
+      component.tickets.set([
+        { ...mockTicket, status: TicketStatus.IN_PROGRESS, _id: '1' },
+        { ...mockTicket, status: TicketStatus.OPEN, _id: '2' },
+      ]);
+      expect(component.inProgressTickets()).toBe(1);
+    });
+
+    it('should compute resolved tickets count', () => {
+      component.tickets.set([
+        { ...mockTicket, status: TicketStatus.RESOLVED, _id: '1' },
+        { ...mockTicket, status: TicketStatus.OPEN, _id: '2' },
+      ]);
+      expect(component.resolvedTickets()).toBe(1);
+    });
+
+    it('should compute urgent tickets count', () => {
+      component.tickets.set([
+        { ...mockTicket, status: TicketStatus.OPEN, priority: TicketPriority.URGENT, _id: '1' },
+        { ...mockTicket, status: TicketStatus.RESOLVED, priority: TicketPriority.URGENT, _id: '2' },
+        { ...mockTicket, status: TicketStatus.OPEN, priority: TicketPriority.HIGH, _id: '3' },
+      ]);
+      expect(component.urgentTickets()).toBe(1);
+    });
+
+    it('should compute totalPages', () => {
+      component.tickets.set(Array.from({ length: 25 }, (_, i) => ({ ...mockTicket, _id: `t${i}` })));
+      expect(component.totalPages()).toBe(3);
+    });
+
+    it('should compute paginatedTickets', () => {
+      component.tickets.set(Array.from({ length: 15 }, (_, i) => ({ ...mockTicket, _id: `t${i}` })));
+      expect(component.paginatedTickets().length).toBe(10);
+    });
+  });
+
+  describe('loadDevices', () => {
+    it('should load all devices for IT users', () => {
+      component.userRole.set('IT');
+      apiServiceSpy.getDevices.and.returnValue(of({ devices: [{ _id: 'd1', name: 'L1', type: 'Laptop' }], total: 1, page: 1, limit: 1000 }));
+      apiServiceSpy.getUsers.and.returnValue(of([]));
+
+      component.loadDevices().subscribe();
+
+      expect(apiServiceSpy.getDevices).toHaveBeenCalled();
+      expect(component.devices().length).toBe(1);
+    });
+
+    it('should load assigned devices for consultants', () => {
+      component.userRole.set('CONSULTANT');
+      apiServiceSpy.getAssignedDevices.and.returnValue(of({ devices: [{ _id: 'd1', name: 'L1', type: 'Laptop' }], total: 1, page: 1, limit: 1000 }));
+
+      component.loadDevices().subscribe();
+
+      expect(apiServiceSpy.getAssignedDevices).toHaveBeenCalled();
+    });
+
+    it('should handle device load error for IT', () => {
+      component.userRole.set('IT');
+      apiServiceSpy.getDevices.and.returnValue(throwError(() => new Error('fail')));
+
+      component.loadDevices().subscribe();
+
+      expect(component.devices()).toEqual([]);
+    });
+
+    it('should handle device load error for consultant', () => {
+      component.userRole.set('CONSULTANT');
+      apiServiceSpy.getAssignedDevices.and.returnValue(throwError(() => new Error('fail')));
+
+      component.loadDevices().subscribe();
+
+      expect(component.devices()).toEqual([]);
+    });
+  });
+
+  describe('loadITStaff', () => {
+    it('should load IT staff filtered', () => {
+      apiServiceSpy.getUsers.and.returnValue(of(mockITStaff as any));
+
+      component.loadITStaff();
+
+      expect(component.itStaff().length).toBe(2);
+    });
+
+    it('should handle load error', () => {
+      apiServiceSpy.getUsers.and.returnValue(throwError(() => new Error('fail')));
+
+      component.loadITStaff();
+
+      expect(component.itStaff()).toEqual([]);
+    });
+  });
+
+  describe('viewMode computed', () => {
+    it('should compute isMyTicketsView', () => {
+      component.viewMode.set('mine');
+      expect(component.isMyTicketsView()).toBe(true);
+
+      component.viewMode.set('all');
+      expect(component.isMyTicketsView()).toBe(false);
+    });
+  });
+
+  describe('getCurrentUserInitials invalid JSON', () => {
+    it('should return ? for invalid JSON', () => {
+      localStorage.setItem('user', '{invalid json');
+      expect(component.getCurrentUserInitials()).toBe('?');
     });
   });
 });

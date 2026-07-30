@@ -29,6 +29,11 @@ export class AppSidebarComponent {
   // Shared nav items for all authenticated roles
   navItems: NavItem[] = [
     {
+      name: "Tableau de bord",
+      icon: `<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+      path: "/",
+    },
+    {
       name: "Mes tickets",
       icon: `<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 7v10a2 2 0 002 2h12a2 2 0 002-2V7H4z" stroke="currentColor" stroke-width="1.2"/><path d="M8 11h8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>`,
       path: "/my-tickets",
@@ -58,6 +63,11 @@ export class AppSidebarComponent {
       path: '/device-management',
     },
     {
+      name: "Maintenance",
+      icon: `<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.2"/></svg>`,
+      path: '/device-maintenance',
+    },
+    {
       name: "Mes appareils",
       icon: `<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="6" y="3" width="12" height="18" rx="2" stroke="currentColor" stroke-width="1.2"/><circle cx="12" cy="18" r="0.8" fill="currentColor"/></svg>`,
       path: '/consultant-devices',
@@ -80,6 +90,11 @@ export class AppSidebarComponent {
       name: "Appareils",
       icon: `<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="5" width="18" height="12" rx="2" stroke="currentColor" stroke-width="1.4"/><path d="M8 19h8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>`,
       path: '/device-management',
+    },
+    {
+      name: "Maintenance",
+      icon: `<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.2"/></svg>`,
+      path: '/device-maintenance',
     },
     {
       name: "Mes appareils",
@@ -132,22 +147,22 @@ export class AppSidebarComponent {
     const deduped = Array.from(dedupMap.values());
 
     // Apply role-based filtering: admin sees everything; IT cannot see 'Utilisateurs';
-    // Consultants cannot see 'Utilisateurs' and 'Appareils'.
+    // Consultants cannot see 'Utilisateurs', 'Appareils', 'Maintenance', and 'Types d'appareils'.
     let allowed: NavItem[];
     if (isAdmin) {
       allowed = deduped;
     } else if (isIT) {
       allowed = deduped.filter(i => i.path !== '/user-management');
     } else if (isConsultant) {
-      allowed = deduped.filter(i => i.path !== '/user-management' && i.path !== '/device-management');
+      allowed = deduped.filter(i => i.path !== '/user-management' && i.path !== '/device-management' && i.path !== '/device-types' && i.path !== '/device-maintenance');
     } else {
       // default: be conservative
-      allowed = deduped.filter(i => i.path !== '/user-management' && i.path !== '/device-management');
+      allowed = deduped.filter(i => i.path !== '/user-management' && i.path !== '/device-management' && i.path !== '/device-types' && i.path !== '/device-maintenance');
     }
 
-    // Desired ordering: Utilisateurs, Appareils, Mes appareils, Tickets, Chat, then any remaining
+    // Desired ordering: Utilisateurs, Appareils, Maintenance, Mes appareils, Tickets, Chat, then any remaining
     const lookup = (path: string) => allowed.find(i => i.path === path);
-    const orderedPaths = ['/user-management', '/device-management', '/consultant-devices', '/tickets', '/my-tickets', '/chat'];
+    const orderedPaths = ['/', '/user-management', '/device-management', '/device-maintenance', '/device-types', '/consultant-devices', '/tickets', '/my-tickets', '/chat'];
     const ordered: NavItem[] = [];
     for (const p of orderedPaths) {
       const it = lookup(p);

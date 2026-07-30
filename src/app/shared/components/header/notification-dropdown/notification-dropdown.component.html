@@ -1,4 +1,4 @@
-<div class="relative" *ngIf="canViewNotifications">
+<div class="relative">
   <button
     class="relative flex items-center justify-center text-gray-500 transition-colors bg-white border border-gray-200 rounded-full dropdown-toggle hover:text-gray-700 h-11 w-11 hover:bg-gray-100 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
     (click)="toggleDropdown()"
@@ -54,22 +54,21 @@
       </button>
     </div>
     <ul class="flex flex-col h-auto overflow-y-auto custom-scrollbar">
-      <li *ngIf="unreadCount() === 0">
+      <li *ngIf="notifications().length === 0">
         <div class="p-4 text-center text-gray-500 dark:text-gray-400">
-          No new notifications
+          No notifications
         </div>
       </li>
-      <li *ngFor="let notification of notifications()">
+      <li *ngFor="let notification of notifications()" (click)="navigateToNotification(notification)">
         <app-dropdown-item
-          (itemClick)="closeDropdown()"
-          [className]="'w-full text-left text-sm text-gray-700 hover:text-gray-900 flex gap-3 rounded-lg border-b border-gray-100 p-3 px-4.5 py-3 hover:bg-gray-100 dark:border-gray-800 dark:hover:bg-white/5'"
+          [className]="'w-full text-left text-sm text-gray-700 hover:text-gray-900 flex gap-3 rounded-lg border-b border-gray-100 p-3 px-4.5 py-3 hover:bg-gray-100 dark:border-gray-800 dark:hover:bg-white/5 cursor-pointer'"
         >
           <span class="relative block w-full h-10 rounded-full z-1 max-w-10">
             <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="w-full bg-blue-100 rounded-full p-2">
               <path d="M12 2C11.5858 2 11.25 2.33579 11.25 2.75V12C11.25 12.4142 11.5858 12.75 12 12.75H21.25C21.6642 12.75 22 12.4142 22 12C22 6.47715 17.5228 2 12 2ZM12.75 11.25V3.53263C13.2645 3.57761 13.7659 3.66843 14.25 3.80098V3.80099C15.6929 4.19606 16.9827 4.96184 18.0104 5.98959C19.0382 7.01734 19.8039 8.30707 20.199 9.75C20.3316 10.2341 20.4224 10.7355 20.4674 11.25H12.75ZM2 12C2 7.25083 5.31065 3.27489 9.75 2.25415V3.80099C6.14748 4.78734 3.5 8.0845 3.5 12C3.5 16.6944 7.30558 20.5 12 20.5C15.9155 20.5 19.2127 17.8525 20.199 14.25H21.7459C20.7251 18.6894 16.7492 22 12 22C6.47715 22 2 17.5229 2 12Z" fill="currentColor" class="text-blue-600"/>
             </svg>
           </span>
-          <span class="block">
+          <span class="block flex-1 min-w-0">
             <span class="mb-1.5 block text-theme-sm text-gray-500 dark:text-gray-400">
               <span class="font-medium text-gray-800 dark:text-white/90">
                 {{ notification.message }}
@@ -79,15 +78,17 @@
               <span>{{ notification.createdAt | date:'short' }}</span>
             </span>
           </span>
+          <button
+            (click)="deleteNotification($event, notification._id)"
+            class="shrink-0 p-1 text-gray-400 hover:text-red-500 transition-colors"
+            title="Clear notification"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+            </svg>
+          </button>
         </app-dropdown-item>
       </li>
     </ul>
-    <a
-      routerLink="/user-management"
-      (click)="closeDropdown()"
-      class="block px-4 py-2 mt-3 text-sm font-medium text-center text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700"
-    >
-      Manage Users
-    </a>
   </app-dropdown>
 </div>

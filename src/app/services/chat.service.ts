@@ -21,6 +21,8 @@ export interface ChatMessage {
     profilePicture?: string;
   };
   message: string;
+  imageUrl?: string;
+  reactions?: { emoji: string; userId: { _id: string; nom: string; prenom: string } }[];
   read: boolean;
   createdAt: string;
   updatedAt: string;
@@ -59,6 +61,9 @@ export class ChatService {
   private typingSubject = new BehaviorSubject<{ userId: string; isTyping: boolean } | null>(null);
   typing$ = this.typingSubject.asObservable();
 
+  private reactionSubject = new BehaviorSubject<{ messageId: string; reactions: any[] } | null>(null);
+  reaction$ = this.reactionSubject.asObservable();
+
   constructor(private http: HttpClient, private apiService: ApiService) {}
 
   private getAuthHeaders(): { headers: HttpHeaders } {
@@ -74,7 +79,7 @@ export class ChatService {
     const token = localStorage.getItem('auth_token');
     if (!token) return;
 
-    this.socket = io(this.apiUrl, {
+    this.socket = io(`${this.apiUrl}/chat`, {
       auth: { token },
       transports: ['websocket', 'polling'],
       reconnection: true,
@@ -83,7 +88,7 @@ export class ChatService {
     });
 
     this.socket.on('connect', () => {
-      console.log('Connected to chat server');
+      console.log('Connected to chat server, socket ID:', this.socket?.id);
     });
 
     this.socket.on('disconnect', () => {
@@ -95,24 +100,36 @@ export class ChatService {
     });
 
     this.socket.on('new_message', (message: ChatMessage) => {
+      console.log('Received new_message event:', message);
       this.newMessageSubject.next(message);
     });
 
     this.socket.on('message_read', (data: { messageId: string }) => {
+      console.log('Received message_read event:', data);
       this.messageReadSubject.next(data);
     });
 
     this.socket.on('unread_count', (count: number) => {
+      console.log('Received unread_count event:', count);
       this.unreadCountSubject.next(count);
     });
 
     this.socket.on('user_typing', (data: { userId: string; isTyping: boolean }) => {
+      console.log('Received user_typing event:', data);
       this.typingSubject.next(data);
     });
 
+    this.socket.on('message_reaction', (data: { messageId: string; reactions: any[] }) => {
+      console.log('Received message_reaction event:', data);
+      this.reactionSubject.next(data);
+    });
+
+    this.socket.on('message_sent', (message: ChatMessage) => {
+      console.log('Received message_sent event:', message);
+    });
+
     this.socket.on('conversation_read', (data: { by: string }) => {
-      // Handle conversation read event
-      console.log('Conversation read by:', data.by);
+      console.log('Received conversation_read event:', data);
     });
   }
 
@@ -123,16 +140,32 @@ export class ChatService {
     }
   }
 
-  sendMessage(receiverId: string, message: string): Observable<ChatMessage> {
-    if (this.socket) {
-      this.socket.emit('send_message', { receiverId, message });
+  sendMessage(receiverId: string, message: string, imageUrl?: string): Observable<ChatMessage> {
+    console.log('Sending message via socket:', { receiverId, message, imageUrl });
+    console.log('Socket status:', {
+      connected: this.socket?.connected,
+      id: this.socket?.id,
+      hasListeners: this.socket?.hasListeners('message_sent')
+    });
+    
+    if (this.socket && this.socket.connected) {
+      this.socket.emit('send_message', { receiverId, message, imageUrl });
+      console.log('Message emitted to socket');
       return new Observable(observer => {
         this.socket?.once('message_sent', (message: ChatMessage) => {
+          console.log('Message sent confirmation received:', message);
           observer.next(message);
           observer.complete();
         });
+        
+        // Add timeout to handle case where confirmation never comes
+        setTimeout(() => {
+          console.error('Message confirmation timeout');
+          observer.error(new Error('Message confirmation timeout'));
+        }, 10000);
       });
     }
+    console.error('Socket not connected');
     throw new Error('Socket not connected');
   }
 
@@ -154,6 +187,12 @@ export class ChatService {
     }
   }
 
+  toggleReaction(messageId: string, emoji: string) {
+    if (this.socket) {
+      this.socket.emit('toggle_reaction', { messageId, emoji });
+    }
+  }
+
   // REST API methods
   getConversations(): Observable<Conversation[]> {
     return this.http.get<Conversation[]>(`${this.apiUrl}/chats/conversations`, this.getAuthHeaders());
@@ -165,5 +204,13 @@ export class ChatService {
 
   getUnreadMessages(): Observable<ChatMessage[]> {
     return this.http.get<ChatMessage[]>(`${this.apiUrl}/chats/unread`, this.getAuthHeaders());
+  }
+
+  uploadImage(file: File): Observable<{ url: string }> {
+    const formData = new FormData();
+    formData.append('file', file);
+    console.log('Uploading to:', `${this.apiUrl}/chats/upload`);
+    console.log('File:', file.name, file.size, file.type);
+    return this.http.post<{ url: string }>(`${this.apiUrl}/chats/upload`, formData, this.getAuthHeaders());
   }
 }

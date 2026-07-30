@@ -1,23 +1,380 @@
-<div class="grid grid-cols-12 gap-4 md:gap-6">
-  <div class="col-span-12 space-y-6 xl:col-span-7">
-    <div><app-ecommerce-metrics /></div>
+<div class="space-y-6">
 
-    <div><app-monthly-sales-chart /></div>
+  <!-- Welcome Banner -->
+  <div class="relative overflow-hidden rounded-2xl border border-blue-100 bg-gradient-to-r from-blue-50 via-white to-violet-50 p-6 shadow-sm dark:border-blue-900/40 dark:from-blue-950/40 dark:via-slate-800 dark:to-violet-950/30 sm:p-8">
+    <div class="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-blue-100/60 blur-2xl dark:bg-blue-500/10"></div>
+    <div class="absolute -bottom-6 -left-6 h-24 w-24 rounded-full bg-violet-100/60 blur-2xl dark:bg-violet-500/10"></div>
+    <div class="relative flex items-start gap-4">
+      <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-white shadow-lg shadow-blue-600/25 dark:bg-blue-500 dark:shadow-blue-500/20">
+        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
+        </svg>
+      </div>
+      <div>
+        <h1 class="text-xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-2xl">
+          Bienvenue, {{ userName() }}
+        </h1>
+        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+          Voici un apercu de votre activite.
+        </p>
+      </div>
+    </div>
   </div>
 
-  <div class="col-span-12 xl:col-span-5">
-    <app-monthly-target />
+  <!-- Loading -->
+  <div *ngIf="loading()" class="flex items-center justify-center rounded-2xl border border-gray-200 bg-white py-16 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+    <div class="flex items-center gap-3">
+      <svg class="h-5 w-5 animate-spin text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+      </svg>
+      <span class="text-sm font-medium text-gray-500 dark:text-gray-400">Chargement des statistiques...</span>
+    </div>
   </div>
 
-  <div class="col-span-12">
-    <app-statics-chart />
-  </div>
+  <!-- ==================== ADMIN & IT Dashboard ==================== -->
+  <ng-container *ngIf="!loading() && stats() && !isConsultant()">
 
-  <div class="col-span-12 xl:col-span-5">
-    <app-demographic-card />
-  </div>
+    <!-- Stat Cards Row -->
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2" [ngClass]="isAdmin() ? 'xl:grid-cols-4' : 'lg:grid-cols-3'">
 
-  <div class="col-span-12 xl:col-span-7">
-    <app-recent-orders/>
-  </div>
+      <!-- Users Card -->
+      <div *ngIf="isAdmin()" class="group relative overflow-hidden rounded-2xl border border-gray-200 bg-white p-5 shadow-sm transition duration-200 hover:shadow-md dark:border-slate-700 dark:bg-slate-800 dark:hover:border-slate-600">
+        <div class="absolute inset-y-0 left-0 w-1 bg-blue-500 dark:bg-blue-400"></div>
+        <div class="flex items-center justify-between">
+          <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-500/15 dark:text-blue-400">
+            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
+            </svg>
+          </div>
+          <span class="text-xs font-medium text-gray-400 dark:text-gray-500">Actifs</span>
+        </div>
+        <p class="mt-4 text-2xl font-bold tracking-tight text-gray-900 dark:text-white">{{ stats().totalUsers || 0 }}</p>
+        <p class="mt-0.5 text-xs font-medium text-gray-500 dark:text-gray-400">Utilisateurs</p>
+        <div class="mt-3 flex flex-wrap gap-1.5">
+          <span class="inline-flex items-center gap-1 rounded-md bg-blue-50 px-2 py-0.5 text-[11px] font-semibold text-blue-700 dark:bg-blue-500/15 dark:text-blue-300">
+            <span class="h-1.5 w-1.5 rounded-full bg-blue-500 dark:bg-blue-400"></span>
+            Admin: {{ stats().usersByRole?.['ADMIN'] || 0 }}
+          </span>
+          <span class="inline-flex items-center gap-1 rounded-md bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-700 dark:bg-amber-500/15 dark:text-amber-300">
+            <span class="h-1.5 w-1.5 rounded-full bg-amber-500 dark:bg-amber-400"></span>
+            IT: {{ stats().usersByRole?.['IT'] || 0 }}
+          </span>
+          <span class="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">
+            <span class="h-1.5 w-1.5 rounded-full bg-emerald-500 dark:bg-emerald-400"></span>
+            Consultant: {{ stats().usersByRole?.['CONSULTANT'] || 0 }}
+          </span>
+        </div>
+      </div>
+
+      <!-- Devices Card -->
+      <div class="group relative overflow-hidden rounded-2xl border border-gray-200 bg-white p-5 shadow-sm transition duration-200 hover:shadow-md dark:border-slate-700 dark:bg-slate-800 dark:hover:border-slate-600">
+        <div class="absolute inset-y-0 left-0 w-1 bg-violet-500 dark:bg-violet-400"></div>
+        <div class="flex items-center justify-between">
+          <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-violet-50 text-violet-600 dark:bg-violet-500/15 dark:text-violet-400">
+            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 17.25v1.007a3 3 0 01-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0115 18.257V17.25m6-12V15a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 15V5.25m18 0A2.25 2.25 0 0018.75 3H5.25A2.25 2.25 0 003 5.25m18 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 7.41A2.25 2.25 0 012.25 5.495V5.25" />
+            </svg>
+          </div>
+          <span class="text-xs font-medium text-gray-400 dark:text-gray-500">Total</span>
+        </div>
+        <p class="mt-4 text-2xl font-bold tracking-tight text-gray-900 dark:text-white">{{ stats().totalDevices || 0 }}</p>
+        <p class="mt-0.5 text-xs font-medium text-gray-500 dark:text-gray-400">Appareils</p>
+        <div class="mt-3 flex flex-wrap gap-1.5">
+          <span class="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">
+            <span class="h-1.5 w-1.5 rounded-full bg-emerald-500 dark:bg-emerald-400"></span>
+            Dispo: {{ stats().devicesByStatus?.['available'] || 0 }}
+          </span>
+          <span class="inline-flex items-center gap-1 rounded-md bg-sky-50 px-2 py-0.5 text-[11px] font-semibold text-sky-700 dark:bg-sky-500/15 dark:text-sky-300">
+            <span class="h-1.5 w-1.5 rounded-full bg-sky-500 dark:bg-sky-400"></span>
+            Assignes: {{ stats().devicesByStatus?.['assigned'] || 0 }}
+          </span>
+          <span class="inline-flex items-center gap-1 rounded-md bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-700 dark:bg-amber-500/15 dark:text-amber-300">
+            <span class="h-1.5 w-1.5 rounded-full bg-amber-500 dark:bg-amber-400"></span>
+            Maint: {{ stats().devicesByStatus?.['maintenance'] || 0 }}
+          </span>
+          <span class="inline-flex items-center gap-1 rounded-md bg-gray-100 px-2 py-0.5 text-[11px] font-semibold text-gray-600 dark:bg-slate-700 dark:text-gray-400">
+            <span class="h-1.5 w-1.5 rounded-full bg-gray-400 dark:bg-gray-500"></span>
+            Retires: {{ stats().devicesByStatus?.['retired'] || 0 }}
+          </span>
+        </div>
+      </div>
+
+      <!-- Tickets Card -->
+      <div class="group relative overflow-hidden rounded-2xl border border-gray-200 bg-white p-5 shadow-sm transition duration-200 hover:shadow-md dark:border-slate-700 dark:bg-slate-800 dark:hover:border-slate-600">
+        <div class="absolute inset-y-0 left-0 w-1 bg-emerald-500 dark:bg-emerald-400"></div>
+        <div class="flex items-center justify-between">
+          <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400">
+            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15a2.25 2.25 0 012.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25zM6.75 12h.008v.008H6.75V12zm0 3h.008v.008H6.75V15zm0 3h.008v.008H6.75V18z" />
+            </svg>
+          </div>
+          <span class="text-xs font-medium text-gray-400 dark:text-gray-500">Tous</span>
+        </div>
+        <p class="mt-4 text-2xl font-bold tracking-tight text-gray-900 dark:text-white">{{ stats().totalTickets || 0 }}</p>
+        <p class="mt-0.5 text-xs font-medium text-gray-500 dark:text-gray-400">Tickets</p>
+        <div class="mt-3 flex flex-wrap gap-1.5">
+          <span class="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">
+            <span class="h-1.5 w-1.5 rounded-full bg-emerald-500 dark:bg-emerald-400"></span>
+            Ouverts: {{ stats().ticketsByStatus?.['open'] || 0 }}
+          </span>
+          <span class="inline-flex items-center gap-1 rounded-md bg-sky-50 px-2 py-0.5 text-[11px] font-semibold text-sky-700 dark:bg-sky-500/15 dark:text-sky-300">
+            <span class="h-1.5 w-1.5 rounded-full bg-sky-500 dark:bg-sky-400"></span>
+            En cours: {{ stats().ticketsByStatus?.['in_progress'] || 0 }}
+          </span>
+          <span class="inline-flex items-center gap-1 rounded-md bg-violet-50 px-2 py-0.5 text-[11px] font-semibold text-violet-700 dark:bg-violet-500/15 dark:text-violet-300">
+            <span class="h-1.5 w-1.5 rounded-full bg-violet-500 dark:bg-violet-400"></span>
+            Resolus: {{ stats().ticketsByStatus?.['resolved'] || 0 }}
+          </span>
+        </div>
+      </div>
+
+      <!-- Open Tickets CTA Card -->
+      <div class="group relative overflow-hidden rounded-2xl border border-gray-200 bg-white p-5 shadow-sm transition duration-200 hover:shadow-md dark:border-slate-700 dark:bg-slate-800 dark:hover:border-slate-600">
+        <div class="absolute inset-y-0 left-0 w-1 bg-rose-500 dark:bg-rose-400"></div>
+        <div class="flex items-center justify-between">
+          <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-rose-50 text-rose-600 dark:bg-rose-500/15 dark:text-rose-400">
+            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+            </svg>
+          </div>
+          <span class="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2 py-0.5 text-[11px] font-bold text-rose-600 dark:bg-rose-500/15 dark:text-rose-400" *ngIf="(stats().ticketsByStatus?.['open'] || 0) > 0">
+            <svg class="h-3 w-3 animate-pulse" fill="currentColor" viewBox="0 0 8 8"><circle cx="4" cy="4" r="4"/></svg>
+            Attention
+          </span>
+        </div>
+        <p class="mt-4 text-2xl font-bold tracking-tight text-rose-600 dark:text-rose-400">{{ stats().ticketsByStatus?.['open'] || 0 }}</p>
+        <p class="mt-0.5 text-xs font-medium text-gray-500 dark:text-gray-400">Tickets ouverts</p>
+        <p class="mt-2 text-xs text-gray-400 dark:text-gray-500">Necessitent une intervention</p>
+        <a routerLink="/tickets" class="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-blue-600 transition hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300">
+          Voir les tickets
+          <svg class="h-4 w-4 transition-transform group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" /></svg>
+        </a>
+      </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="grid grid-cols-1 gap-4" [ngClass]="isAdmin() ? 'lg:grid-cols-2' : ''">
+      <a routerLink="/device-allocation" class="group relative flex items-center gap-4 overflow-hidden rounded-2xl border border-gray-200 bg-white p-5 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md dark:border-slate-700 dark:bg-slate-800 dark:hover:border-blue-800/60 dark:hover:shadow-blue-500/5">
+        <div class="absolute inset-0 bg-gradient-to-r from-blue-50/0 to-blue-50/50 opacity-0 transition duration-200 group-hover:opacity-100 dark:from-blue-500/0 dark:to-blue-500/5"></div>
+        <div class="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 transition duration-200 group-hover:bg-blue-100 group-hover:shadow-sm dark:bg-blue-500/15 dark:text-blue-400 dark:group-hover:bg-blue-500/20">
+          <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H18.75m-7.5-10.5h4.875a2.25 2.25 0 012.25 2.25v4.5a2.25 2.25 0 01-2.25 2.25H9.75m-4.5 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25" /></svg>
+        </div>
+        <div class="relative min-w-0 flex-1">
+          <p class="text-sm font-semibold text-gray-900 dark:text-white">Allocation des appareils</p>
+          <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">Attribuer ou restituer des appareils</p>
+        </div>
+        <svg class="relative h-5 w-5 shrink-0 text-gray-300 transition duration-200 group-hover:translate-x-0.5 group-hover:text-blue-500 dark:text-gray-600 dark:group-hover:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" /></svg>
+      </a>
+
+      <a *ngIf="isAdmin()" routerLink="/user-management" class="group relative flex items-center gap-4 overflow-hidden rounded-2xl border border-gray-200 bg-white p-5 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-amber-200 hover:shadow-md dark:border-slate-700 dark:bg-slate-800 dark:hover:border-amber-800/60 dark:hover:shadow-amber-500/5">
+        <div class="absolute inset-0 bg-gradient-to-r from-amber-50/0 to-amber-50/50 opacity-0 transition duration-200 group-hover:opacity-100 dark:from-amber-500/0 dark:to-amber-500/5"></div>
+        <div class="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-amber-600 transition duration-200 group-hover:bg-amber-100 group-hover:shadow-sm dark:bg-amber-500/15 dark:text-amber-400 dark:group-hover:bg-amber-500/20">
+          <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" /></svg>
+        </div>
+        <div class="relative min-w-0 flex-1">
+          <p class="text-sm font-semibold text-gray-900 dark:text-white">Gestion des utilisateurs</p>
+          <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">Gerer les comptes et les roles</p>
+        </div>
+        <svg class="relative h-5 w-5 shrink-0 text-gray-300 transition duration-200 group-hover:translate-x-0.5 group-hover:text-amber-500 dark:text-gray-600 dark:group-hover:text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" /></svg>
+      </a>
+    </div>
+
+    <!-- Analytics Row: Priority + Issue Type Breakdown -->
+    <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
+
+      <!-- Tickets by Priority -->
+      <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+        <p class="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Tickets par priorite</p>
+        <div class="mt-4 space-y-3">
+          <ng-container *ngFor="let item of ['urgent', 'high', 'medium', 'low']">
+            <div class="flex items-center gap-3" *ngIf="(stats().ticketsByPriority?.[item] || 0) > 0">
+              <span class="w-14 shrink-0 text-right text-xs font-medium text-gray-600 dark:text-gray-400">{{ priorityLabel(item) }}</span>
+              <div class="relative h-2 flex-1 overflow-hidden rounded-full bg-gray-100 dark:bg-slate-700">
+                <div class="absolute inset-y-0 left-0 rounded-full transition-all duration-500" [ngClass]="priorityColor(item)" [style.width.%]="barWidth(stats().ticketsByPriority?.[item] || 0, stats().ticketsByPriority)"></div>
+              </div>
+              <span class="w-6 text-right text-xs font-bold text-gray-900 dark:text-white">{{ stats().ticketsByPriority?.[item] || 0 }}</span>
+            </div>
+          </ng-container>
+          <p class="pt-2 text-center text-[11px] text-gray-400 dark:text-gray-500" *ngIf="objectKeys(stats().ticketsByPriority).length === 0">
+            Aucun ticket
+          </p>
+        </div>
+      </div>
+
+      <!-- Tickets by Issue Type -->
+      <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+        <p class="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Tickets par type de panne</p>
+        <div class="mt-4 space-y-3">
+          <ng-container *ngFor="let item of ['damaged', 'malfunction', 'destroyed', 'other']">
+            <div class="flex items-center gap-3" *ngIf="(stats().ticketsByIssueType?.[item] || 0) > 0">
+              <span class="w-28 shrink-0 text-right text-xs font-medium text-gray-600 dark:text-gray-400">{{ issueTypeLabel(item) }}</span>
+              <div class="relative h-2 flex-1 overflow-hidden rounded-full bg-gray-100 dark:bg-slate-700">
+                <div class="absolute inset-y-0 left-0 rounded-full transition-all duration-500" [ngClass]="issueTypeColor(item)" [style.width.%]="barWidth(stats().ticketsByIssueType?.[item] || 0, stats().ticketsByIssueType)"></div>
+              </div>
+              <span class="w-6 text-right text-xs font-bold text-gray-900 dark:text-white">{{ stats().ticketsByIssueType?.[item] || 0 }}</span>
+            </div>
+          </ng-container>
+          <p class="pt-2 text-center text-[11px] text-gray-400 dark:text-gray-500" *ngIf="objectKeys(stats().ticketsByIssueType).length === 0">
+            Aucun ticket
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Devices by Type + Recent Tickets Row -->
+    <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
+
+      <!-- Devices by Type -->
+      <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+        <p class="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Appareils par type</p>
+        <div class="mt-4 space-y-3">
+          <ng-container *ngFor="let key of objectKeys(stats().devicesByType)">
+            <div class="flex items-center gap-3">
+              <span class="w-24 shrink-0 text-right text-xs font-medium text-gray-600 dark:text-gray-400">{{ deviceTypeLabel(key) }}</span>
+              <div class="relative h-2 flex-1 overflow-hidden rounded-full bg-gray-100 dark:bg-slate-700">
+                <div class="absolute inset-y-0 left-0 rounded-full transition-all duration-500" [ngClass]="deviceTypeColor(key)" [style.width.%]="barWidth(stats().devicesByType[key], stats().devicesByType)"></div>
+              </div>
+              <span class="w-6 text-right text-xs font-bold text-gray-900 dark:text-white">{{ stats().devicesByType[key] }}</span>
+            </div>
+          </ng-container>
+          <p class="pt-2 text-center text-[11px] text-gray-400 dark:text-gray-500" *ngIf="objectKeys(stats().devicesByType).length === 0">
+            Aucun appareil
+          </p>
+        </div>
+      </div>
+
+      <!-- Recent Tickets -->
+      <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+        <div class="flex items-center justify-between">
+          <p class="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Tickets recents</p>
+          <a routerLink="/tickets" class="text-[11px] font-semibold text-blue-600 transition hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300">Voir tout</a>
+        </div>
+        <div class="mt-4 space-y-2.5">
+          <ng-container *ngIf="stats().recentTickets?.length > 0">
+            <div *ngFor="let t of stats().recentTickets" class="flex items-center gap-3 rounded-xl border border-gray-100 bg-gray-50/50 p-3 transition duration-200 hover:bg-gray-100/60 dark:border-slate-700 dark:bg-slate-700/40 dark:hover:bg-slate-700/60">
+              <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white text-gray-400 shadow-sm dark:bg-slate-800 dark:text-gray-500">
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15a2.25 2.25 0 012.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25zM6.75 12h.008v.008H6.75V12zm0 3h.008v.008H6.75V15zm0 3h.008v.008H6.75V18z" /></svg>
+              </div>
+              <div class="min-w-0 flex-1">
+                <p class="truncate text-sm font-medium text-gray-900 dark:text-white">{{ t.title }}</p>
+                <p class="mt-0.5 text-[11px] text-gray-400 dark:text-gray-500">{{ t.device?.name || 'Appareil' }} &middot; {{ timeAgo(t.createdAt) }}</p>
+              </div>
+              <span class="shrink-0 rounded-md px-2 py-0.5 text-[11px] font-semibold" [ngClass]="statusBadge(t.status)">{{ statusLabel(t.status) }}</span>
+              <span class="shrink-0 rounded-md px-2 py-0.5 text-[11px] font-semibold" [ngClass]="priorityBadge(t.priority)">{{ priorityLabel(t.priority) }}</span>
+            </div>
+          </ng-container>
+          <p class="pt-2 text-center text-[11px] text-gray-400 dark:text-gray-500" *ngIf="!stats().recentTickets?.length">
+            Aucun ticket recemment cree
+          </p>
+        </div>
+      </div>
+    </div>
+  </ng-container>
+
+  <!-- ==================== CONSULTANT Dashboard ==================== -->
+  <ng-container *ngIf="!loading() && stats() && isConsultant()">
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+
+      <!-- My Devices -->
+      <div class="group relative overflow-hidden rounded-2xl border border-gray-200 bg-white p-5 shadow-sm transition duration-200 hover:shadow-md dark:border-slate-700 dark:bg-slate-800 dark:hover:border-slate-600">
+        <div class="absolute inset-y-0 left-0 w-1 bg-blue-500 dark:bg-blue-400"></div>
+        <div class="flex items-center justify-between">
+          <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-500/15 dark:text-blue-400">
+            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 17.25v1.007a3 3 0 01-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0115 18.257V17.25m6-12V15a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 15V5.25m18 0A2.25 2.25 0 0018.75 3H5.25A2.25 2.25 0 003 5.25m18 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 7.41A2.25 2.25 0 012.25 5.495V5.25" />
+            </svg>
+          </div>
+        </div>
+        <p class="mt-4 text-2xl font-bold tracking-tight text-gray-900 dark:text-white">{{ stats().myDevices || 0 }}</p>
+        <p class="mt-0.5 text-xs font-medium text-gray-500 dark:text-gray-400">Appareils assignes</p>
+        <a routerLink="/consultant-devices" class="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-blue-600 transition hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300">
+          Voir mes appareils
+          <svg class="h-4 w-4 transition-transform group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" /></svg>
+        </a>
+      </div>
+
+      <!-- My Tickets -->
+      <div class="group relative overflow-hidden rounded-2xl border border-gray-200 bg-white p-5 shadow-sm transition duration-200 hover:shadow-md dark:border-slate-700 dark:bg-slate-800 dark:hover:border-slate-600">
+        <div class="absolute inset-y-0 left-0 w-1 bg-emerald-500 dark:bg-emerald-400"></div>
+        <div class="flex items-center justify-between">
+          <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400">
+            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15a2.25 2.25 0 012.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25zM6.75 12h.008v.008H6.75V12zm0 3h.008v.008H6.75V15zm0 3h.008v.008H6.75V18z" />
+            </svg>
+          </div>
+        </div>
+        <p class="mt-4 text-2xl font-bold tracking-tight text-gray-900 dark:text-white">{{ stats().myTickets || 0 }}</p>
+        <p class="mt-0.5 text-xs font-medium text-gray-500 dark:text-gray-400">Mes tickets</p>
+        <div class="mt-3 flex flex-wrap gap-1.5">
+          <span class="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">
+            <span class="h-1.5 w-1.5 rounded-full bg-emerald-500 dark:bg-emerald-400"></span>
+            Ouverts: {{ stats().myOpenTickets || 0 }}
+          </span>
+          <span class="inline-flex items-center gap-1 rounded-md bg-sky-50 px-2 py-0.5 text-[11px] font-semibold text-sky-700 dark:bg-sky-500/15 dark:text-sky-300">
+            <span class="h-1.5 w-1.5 rounded-full bg-sky-500 dark:bg-sky-400"></span>
+            En cours: {{ stats().myInProgressTickets || 0 }}
+          </span>
+        </div>
+        <a routerLink="/my-tickets" class="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-blue-600 transition hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300">
+          Voir mes tickets
+          <svg class="h-4 w-4 transition-transform group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" /></svg>
+        </a>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+        <p class="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Actions rapides</p>
+        <div class="mt-4 space-y-2.5">
+          <a routerLink="/consultant-devices" class="group flex items-center gap-3 rounded-xl border border-gray-100 bg-gray-50/50 p-3 text-sm font-medium text-gray-700 transition duration-200 hover:border-blue-200 hover:bg-blue-50/50 hover:text-blue-700 dark:border-slate-700 dark:bg-slate-700/50 dark:text-gray-300 dark:hover:border-blue-800/60 dark:hover:bg-blue-500/10 dark:hover:text-blue-300">
+            <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-gray-400 shadow-sm transition duration-200 group-hover:text-blue-600 dark:bg-slate-800 dark:text-gray-500 dark:group-hover:text-blue-400">
+              <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" /></svg>
+            </div>
+            Signaler un probleme
+            <svg class="ml-auto h-4 w-4 shrink-0 text-gray-300 transition-transform group-hover:translate-x-0.5 group-hover:text-blue-500 dark:text-gray-600 dark:group-hover:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" /></svg>
+          </a>
+          <a routerLink="/my-tickets" class="group flex items-center gap-3 rounded-xl border border-gray-100 bg-gray-50/50 p-3 text-sm font-medium text-gray-700 transition duration-200 hover:border-emerald-200 hover:bg-emerald-50/50 hover:text-emerald-700 dark:border-slate-700 dark:bg-slate-700/50 dark:text-gray-300 dark:hover:border-emerald-800/60 dark:hover:bg-emerald-500/10 dark:hover:text-emerald-300">
+            <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-gray-400 shadow-sm transition duration-200 group-hover:text-emerald-600 dark:bg-slate-800 dark:text-gray-500 dark:group-hover:text-emerald-400">
+              <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H18.75m-7.5-10.5h4.875a2.25 2.25 0 012.25 2.25v4.5a2.25 2.25 0 01-2.25 2.25H9.75m-4.5 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25" /></svg>
+            </div>
+            Voir mes tickets
+            <svg class="ml-auto h-4 w-4 shrink-0 text-gray-300 transition-transform group-hover:translate-x-0.5 group-hover:text-emerald-500 dark:text-gray-600 dark:group-hover:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" /></svg>
+          </a>
+          <a routerLink="/chat" class="group flex items-center gap-3 rounded-xl border border-gray-100 bg-gray-50/50 p-3 text-sm font-medium text-gray-700 transition duration-200 hover:border-violet-200 hover:bg-violet-50/50 hover:text-violet-700 dark:border-slate-700 dark:bg-slate-700/50 dark:text-gray-300 dark:hover:border-violet-800/60 dark:hover:bg-violet-500/10 dark:hover:text-violet-300">
+            <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-gray-400 shadow-sm transition duration-200 group-hover:text-violet-600 dark:bg-slate-800 dark:text-gray-500 dark:group-hover:text-violet-400">
+              <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 8.511c.884.284 1.5 1.128 1.5 2.097v4.286c0 1.136-.847 2.1-1.98 2.193-.34.027-.68.052-1.02.072v3.091l-3-3c-1.354 0-2.694-.055-4.02-.163a2.115 2.115 0 01-.825-.242m9.345-8.334a2.126 2.126 0 00-.476-.095 48.64 48.64 0 00-8.048 0c-1.131.094-1.976 1.057-1.976 2.192v4.286c0 .837.46 1.58 1.155 1.951m9.345-8.334V6.637c0-1.621-1.152-3.026-2.76-3.235A48.455 48.455 0 0011.25 3c-2.115 0-4.198.137-6.24.402-1.608.209-2.76 1.614-2.76 3.235v6.226c0 1.621 1.152 3.026 2.76 3.235.577.075 1.157.14 1.74.194V21l4.155-4.155" /></svg>
+            </div>
+            Envoyer un message
+            <svg class="ml-auto h-4 w-4 shrink-0 text-gray-300 transition-transform group-hover:translate-x-0.5 group-hover:text-violet-500 dark:text-gray-600 dark:group-hover:text-violet-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" /></svg>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent Tickets for Consultant -->
+    <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+      <div class="flex items-center justify-between">
+        <p class="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Mes tickets recents</p>
+        <a routerLink="/my-tickets" class="text-[11px] font-semibold text-blue-600 transition hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300">Voir tout</a>
+      </div>
+      <div class="mt-4 space-y-2.5">
+        <ng-container *ngIf="stats().myRecentTickets?.length > 0">
+          <div *ngFor="let t of stats().myRecentTickets" class="flex items-center gap-3 rounded-xl border border-gray-100 bg-gray-50/50 p-3 transition duration-200 hover:bg-gray-100/60 dark:border-slate-700 dark:bg-slate-700/40 dark:hover:bg-slate-700/60">
+            <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white text-gray-400 shadow-sm dark:bg-slate-800 dark:text-gray-500">
+              <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15a2.25 2.25 0 012.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25zM6.75 12h.008v.008H6.75V12zm0 3h.008v.008H6.75V15zm0 3h.008v.008H6.75V18z" /></svg>
+            </div>
+            <div class="min-w-0 flex-1">
+              <p class="truncate text-sm font-medium text-gray-900 dark:text-white">{{ t.title }}</p>
+              <p class="mt-0.5 text-[11px] text-gray-400 dark:text-gray-500">{{ t.device?.name || 'Appareil' }} &middot; {{ timeAgo(t.createdAt) }}</p>
+            </div>
+            <span class="shrink-0 rounded-md px-2 py-0.5 text-[11px] font-semibold" [ngClass]="statusBadge(t.status)">{{ statusLabel(t.status) }}</span>
+            <span class="shrink-0 rounded-md px-2 py-0.5 text-[11px] font-semibold" [ngClass]="priorityBadge(t.priority)">{{ priorityLabel(t.priority) }}</span>
+          </div>
+        </ng-container>
+        <p class="pt-2 text-center text-[11px] text-gray-400 dark:text-gray-500" *ngIf="!stats().myRecentTickets?.length">
+          Aucun ticket pour le moment
+        </p>
+      </div>
+    </div>
+  </ng-container>
 </div>

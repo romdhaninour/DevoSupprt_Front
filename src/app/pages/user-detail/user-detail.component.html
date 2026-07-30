@@ -1,0 +1,150 @@
+<div class="space-y-6">
+  <!-- Header -->
+  <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div class="flex items-center gap-3">
+      <button
+        type="button"
+        (click)="goBack()"
+        class="inline-flex items-center justify-center w-10 h-10 rounded-xl border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700 transition-all duration-200"
+      >
+        <svg class="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" clip-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" />
+        </svg>
+      </button>
+      <div>
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-1">
+          {{ user()?.prenom }} {{ user()?.nom }}
+        </h1>
+        <p class="text-gray-600 dark:text-gray-400 text-sm">Détails du profil utilisateur</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="loading()" class="flex justify-center items-center h-64">
+    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+  </div>
+
+  <!-- Error -->
+  <div *ngIf="error()" class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-400">
+    {{ error() }}
+  </div>
+
+  <!-- Content -->
+  <div *ngIf="!loading() && !error() && user()" class="space-y-6">
+    <!-- Profile Card -->
+    <div class="animate-fade-in">
+      <app-user-meta-card [user]="user()"/>
+    </div>
+
+    <!-- User Info Card -->
+    <div class="animate-fade-in" style="animation-delay: 100ms;">
+      <app-user-info-card [user]="user()"/>
+    </div>
+
+    <!-- Tickets Card -->
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden animate-fade-in" style="animation-delay: 200ms;">
+      <div class="px-6 py-5 border-b border-gray-100 dark:border-gray-700">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-100 dark:bg-blue-900/30">
+              <svg class="h-5 w-5 text-blue-600 dark:text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M2 5a2 2 0 012-2h7a2 2 0 012 2v4a2 2 0 01-2 2H9l-3 3v-3H4a2 2 0 01-2-2V5z" />
+                <path d="M15 7v2a4 4 0 01-4 4H9.828l-1.766 1.767c.28.149.599.233.938.233h2l3 3v-3h2a2 2 0 002-2V9a2 2 0 00-2-2h-1z" />
+              </svg>
+            </div>
+            <div>
+              <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Tickets</h2>
+              <p class="text-sm text-gray-500 dark:text-gray-400">{{ tickets().length }} ticket(s)</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div *ngIf="tickets().length === 0" class="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
+        <svg class="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" viewBox="0 0 20 20" fill="currentColor">
+          <path d="M2 5a2 2 0 012-2h7a2 2 0 012 2v4a2 2 0 01-2 2H9l-3 3v-3H4a2 2 0 01-2-2V5z" />
+          <path d="M15 7v2a4 4 0 01-4 4H9.828l-1.766 1.767c.28.149.599.233.938.233h2l3 3v-3h2a2 2 0 002-2V9a2 2 0 00-2-2h-1z" />
+        </svg>
+        <p class="font-medium">Aucun ticket</p>
+        <p class="text-sm">Cet utilisateur n'a aucun ticket.</p>
+      </div>
+
+      <div *ngIf="tickets().length > 0" class="divide-y divide-gray-100 dark:divide-gray-700">
+        <div *ngFor="let ticket of tickets()" class="px-6 py-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors duration-200">
+          <div class="flex items-start justify-between gap-4">
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2 mb-1">
+                <h3 class="text-sm font-semibold text-gray-900 dark:text-white truncate">{{ ticket.title }}</h3>
+                <span [class]="'px-2 py-0.5 text-xs font-medium rounded-full ' + getTicketStatusColor(ticket.status)">
+                  {{ getTicketStatusLabel(ticket.status) }}
+                </span>
+                <span [class]="'px-2 py-0.5 text-xs font-medium rounded-full ' + getTicketPriorityColor(ticket.priority)">
+                  {{ getPriorityLabel(ticket.priority) }}
+                </span>
+              </div>
+              <p class="text-sm text-gray-500 dark:text-gray-400 line-clamp-1">{{ ticket.description }}</p>
+              <div class="flex items-center gap-4 mt-2 text-xs text-gray-400 dark:text-gray-500">
+                <span *ngIf="ticket.device">
+                  <span class="font-medium">Appareil:</span> {{ ticket.device.name }}
+                </span>
+                <span *ngIf="ticket.assignedTo">
+                  <span class="font-medium">Assigné à:</span> {{ ticket.assignedTo.prenom }} {{ ticket.assignedTo.nom }}
+                </span>
+                <span>{{ ticket.createdAt | date:'dd/MM/yyyy HH:mm' }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Devices Card -->
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden animate-fade-in" style="animation-delay: 300ms;">
+      <div class="px-6 py-5 border-b border-gray-100 dark:border-gray-700">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-purple-100 dark:bg-purple-900/30">
+              <svg class="h-5 w-5 text-purple-600 dark:text-purple-400" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" clip-rule="evenodd" d="M7 2a2 2 0 00-2 2v12a2 2 0 002 2h6a2 2 0 002-2V4a2 2 0 00-2-2H7zm3 14a1 1 0 100-2 1 1 0 000 2z" />
+              </svg>
+            </div>
+            <div>
+              <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Appareils Assignés</h2>
+              <p class="text-sm text-gray-500 dark:text-gray-400">{{ devices().length }} appareil(s)</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div *ngIf="devices().length === 0" class="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
+        <svg class="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" clip-rule="evenodd" d="M7 2a2 2 0 00-2 2v12a2 2 0 002 2h6a2 2 0 002-2V4a2 2 0 00-2-2H7zm3 14a1 1 0 100-2 1 1 0 000 2z" />
+        </svg>
+        <p class="font-medium">Aucun appareil</p>
+        <p class="text-sm">Aucun appareil n'est assigné à cet utilisateur.</p>
+      </div>
+
+      <div *ngIf="devices().length > 0" class="divide-y divide-gray-100 dark:divide-gray-700">
+        <div *ngFor="let device of devices()" class="px-6 py-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors duration-200">
+          <div class="flex items-center justify-between gap-4">
+            <div class="flex items-center gap-4">
+              <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-gray-100 dark:bg-gray-700">
+                <svg class="h-5 w-5 text-gray-500 dark:text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" clip-rule="evenodd" d="M7 2a2 2 0 00-2 2v12a2 2 0 002 2h6a2 2 0 002-2V4a2 2 0 00-2-2H7zm3 14a1 1 0 100-2 1 1 0 000 2z" />
+                </svg>
+              </div>
+              <div>
+                <h3 class="text-sm font-semibold text-gray-900 dark:text-white">{{ device.name }}</h3>
+                <p class="text-xs text-gray-500 dark:text-gray-400">{{ device.type }} &middot; {{ device.serialNumber }}</p>
+              </div>
+            </div>
+            <span [class]="'px-2.5 py-1 text-xs font-medium rounded-full ' + getDeviceStatusColor(device.status)">
+              {{ getDeviceStatusLabel(device.status) }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

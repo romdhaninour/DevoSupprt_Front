@@ -44,6 +44,7 @@ describe('UserManagementComponent', () => {
       'deleteUser',
       'createUser',
       'updateUser',
+      'exportUsers',
     ]);
 
     const mockActivatedRoute = {
@@ -215,8 +216,8 @@ describe('UserManagementComponent', () => {
       expect(component.getRoleDisplayName('CONSULTANT')).toBe('Consultant');
     });
 
-    it('should return Inconnu for unknown role', () => {
-      expect(component.getRoleDisplayName('UNKNOWN')).toBe('Inconnu');
+    it('should return role string for unknown role', () => {
+      expect(component.getRoleDisplayName('UNKNOWN')).toBe('UNKNOWN');
     });
   });
 
@@ -331,7 +332,7 @@ describe('UserManagementComponent', () => {
   });
 
   describe('openArchiveModal', () => {
-    it('should show warning modal for active user', () => {
+    it('should show archive modal for active user', () => {
       const activeUser = { ...mockUsers[0], status: 'active' as const };
       component.openArchiveModal(activeUser);
 
@@ -346,7 +347,6 @@ describe('UserManagementComponent', () => {
 
       expect(component.selectedUser()).toEqual(inactiveUser);
       expect(component.archiveModalOpen()).toBe(true);
-      expect(component.archiveModalOpen()).toBe(false);
       expect(component.openActionMenuId()).toBeNull();
     });
   });
@@ -617,6 +617,177 @@ describe('UserManagementComponent', () => {
       component.users.set(mockUsers);
       const pages = component.pageNumbers();
       expect(pages).toEqual([1]);
+    });
+  });
+
+  describe('getPaginatedRange', () => {
+    it('should return correct range string', () => {
+      component.users.set(mockUsers);
+      component.searchTerm.set('');
+      component.roleFilter.set('all');
+      component.statusFilter.set('all');
+      component.currentPage = 1;
+      expect(component.getPaginatedRange()).toBe('1 à 2 sur 2');
+    });
+  });
+
+  describe('isAdmin', () => {
+    it('should return true for ADMIN role', () => {
+      localStorage.setItem('user_role', 'ADMIN');
+      expect(component.isAdmin()).toBe(true);
+    });
+
+    it('should return false for non-ADMIN role', () => {
+      localStorage.setItem('user_role', 'IT');
+      expect(component.isAdmin()).toBe(false);
+    });
+  });
+
+  describe('getRoleBadgeColors', () => {
+    it('should return correct colors for ADMIN', () => {
+      const colors = component.getRoleBadgeColors('ADMIN');
+      expect(colors.bg).toContain('red');
+    });
+
+    it('should return correct colors for IT', () => {
+      const colors = component.getRoleBadgeColors('IT');
+      expect(colors.bg).toContain('blue');
+    });
+
+    it('should return correct colors for CONSULTANT', () => {
+      const colors = component.getRoleBadgeColors('CONSULTANT');
+      expect(colors.bg).toContain('purple');
+    });
+
+    it('should return default colors for unknown role', () => {
+      const colors = component.getRoleBadgeColors('UNKNOWN');
+      expect(colors.bg).toContain('gray');
+    });
+  });
+
+  describe('getStatusBadgeColors', () => {
+    it('should return correct colors for active', () => {
+      const colors = component.getStatusBadgeColors('active');
+      expect(colors.bg).toContain('emerald');
+    });
+
+    it('should return correct colors for inactive', () => {
+      const colors = component.getStatusBadgeColors('inactive');
+      expect(colors.bg).toContain('amber');
+    });
+
+    it('should return correct colors for archived', () => {
+      const colors = component.getStatusBadgeColors('archived');
+      expect(colors.bg).toContain('gray');
+    });
+
+    it('should return default colors for unknown status', () => {
+      const colors = component.getStatusBadgeColors('unknown');
+      expect(colors.bg).toContain('gray');
+    });
+  });
+
+  describe('getRoleDisplayName edge cases', () => {
+    it('should return "Inconnu" for empty role', () => {
+      expect(component.getRoleDisplayName('')).toBe('Inconnu');
+    });
+
+    it('should handle null role', () => {
+      expect(component.getRoleDisplayName(null as any)).toBe('Inconnu');
+    });
+  });
+
+  describe('getProfilePictureUrl', () => {
+    it('should return proxy URL when user has profile picture', () => {
+      const user = { ...mockUsers[0], profilePicture: 'pic.jpg' };
+      expect(component.getProfilePictureUrl(user)).toContain('/users/');
+    });
+
+    it('should return empty string when no profile picture', () => {
+      const user = { ...mockUsers[0], profilePicture: '' };
+      expect(component.getProfilePictureUrl(user)).toBe('');
+    });
+  });
+
+  describe('handleExcelImport', () => {
+    it('should return early when no file', async () => {
+      const event = { target: { files: null, value: '' } } as any;
+      await component.handleExcelImport(event);
+      expect(component.importingUsers()).toBe(false);
+    });
+  });
+
+  describe('exportUsers', () => {
+    it('should export users successfully', () => {
+      const blob = new Blob(['data']);
+      apiServiceSpy.exportUsers.and.returnValue(of(blob));
+      spyOn(document, 'createElement').and.returnValue({ click: jasmine.createSpy('click'), href: '', download: '' } as any);
+      spyOn(window.URL, 'createObjectURL').and.returnValue('blob:url');
+      spyOn(window.URL, 'revokeObjectURL');
+
+      component.exportUsers();
+
+      expect(apiServiceSpy.exportUsers).toHaveBeenCalled();
+    });
+
+    it('should handle export error', () => {
+      apiServiceSpy.exportUsers.and.returnValue(throwError(() => new Error('fail')));
+
+      component.exportUsers();
+
+      expect(component.error()).toBe("Impossible d'exporter la liste des utilisateurs.");
+    });
+  });
+
+  describe('onDocumentClick', () => {
+    it('should close action menu on outside click', () => {
+      component.openActionMenuId.set('user1');
+      const event = {
+        target: { closest: () => null },
+      } as any;
+      component.onDocumentClick(event);
+      expect(component.openActionMenuId()).toBeNull();
+    });
+
+    it('should not close action menu on inside click', () => {
+      component.openActionMenuId.set('user1');
+      const event = {
+        target: { closest: (sel: string) => (sel === '.action-menu-container' ? {} : null) },
+      } as any;
+      component.onDocumentClick(event);
+      expect(component.openActionMenuId()).toBe('user1');
+    });
+  });
+
+  describe('confirmAddUser error cases', () => {
+    it('should handle generic error', () => {
+      component.newUserNom = 'John';
+      component.newUserPrenom = 'Doe';
+      component.newUserEmail = 'john@example.com';
+      localStorage.setItem('auth_token', 'test-token');
+
+      const error = { status: 500, error: { message: 'Server error' } };
+      apiServiceSpy.createUser.and.returnValue(throwError(() => error));
+
+      component.confirmAddUser();
+
+      expect(component.newUserError()).toBe('Server error');
+      localStorage.removeItem('auth_token');
+    });
+  });
+
+  describe('closeModals additional', () => {
+    it('should close activation and deactivation modals', () => {
+      component.activationModalOpen.set(true);
+      component.deactivationModalOpen.set(true);
+      component.editModalOpen.set(true);
+
+      component.closeModals();
+
+      expect(component.activationModalOpen()).toBe(false);
+      expect(component.deactivationModalOpen()).toBe(false);
+      expect(component.editModalOpen()).toBe(false);
+      expect(component.selectedRole()).toBe('');
     });
   });
 });

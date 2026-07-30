@@ -1,0 +1,163 @@
+<div class="space-y-6">
+  <!-- Back button -->
+  <div>
+    <a routerLink="/device-maintenance"
+      class="inline-flex items-center gap-2 text-sm font-medium text-gray-600 transition hover:text-gray-900 dark:text-gray-400 dark:hover:text-white">
+      <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+      </svg>
+      Retour à la maintenance
+    </a>
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="loading()" class="flex items-center justify-center py-20">
+    <div class="h-12 w-12 animate-spin rounded-full border-b-2 border-blue-600"></div>
+  </div>
+
+  <!-- Error -->
+  <div *ngIf="error()" class="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-950/20 dark:text-red-300">
+    {{ error() }}
+  </div>
+
+  <!-- Detail Content -->
+  <div *ngIf="!loading() && !error() && device() as d" class="space-y-6">
+    <!-- Header Card -->
+    <div class="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+      <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div class="space-y-3">
+          <div class="flex flex-wrap items-center gap-2">
+            <span [ngClass]="['inline-flex rounded-full border px-3 py-1 text-xs font-semibold', getMaintenanceStatusClass()]">
+              {{ getMaintenanceStatus() }}
+            </span>
+            <span *ngIf="getDaysUntilMaintenance() !== null && getDaysUntilMaintenance()! < 0"
+              class="inline-flex rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-xs font-semibold text-rose-700 dark:border-rose-800 dark:bg-rose-900/30 dark:text-rose-300">
+              Retard de {{ getDaysUntilMaintenance()! * -1 }} jour(s)
+            </span>
+            <span *ngIf="getDaysUntilMaintenance() !== null && getDaysUntilMaintenance()! >= 0 && getDaysUntilMaintenance()! <= 30"
+              class="text-xs text-gray-500 dark:text-gray-400">Dans {{ getDaysUntilMaintenance() }} jour(s)</span>
+          </div>
+          <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
+            {{ d.name }}
+          </h1>
+          <p class="text-sm text-gray-600 dark:text-gray-400">
+            {{ d.type }} · S/N: {{ d.serialNumber }}
+          </p>
+        </div>
+        <div class="flex gap-2">
+          <button (click)="openEditModal()"
+            class="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
+            Modifier
+          </button>
+          <button (click)="markAsMaintained()" [disabled]="maintainLoading()"
+            class="inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-semibold text-emerald-700 hover:bg-emerald-100 transition-colors disabled:opacity-50 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-300">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+            </svg>
+            {{ maintainLoading() ? 'En cours...' : 'Effectué' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+      <!-- LEFT: Maintenance Schedule -->
+      <div class="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+        <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Planning de maintenance</h2>
+        <div class="mt-4 grid gap-3 sm:grid-cols-2">
+          <div class="sm:col-span-2 rounded-xl bg-gray-50 p-4 dark:bg-gray-700/50">
+            <p class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Description</p>
+            <p class="mt-1 text-sm text-gray-900 dark:text-white">{{ d.maintenanceDescription || '—' }}</p>
+          </div>
+          <div class="rounded-xl bg-gray-50 p-4 dark:bg-gray-700/50">
+            <p class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Date de début</p>
+            <p class="mt-1 text-sm font-semibold text-gray-900 dark:text-white">{{ formatDate(d.maintenanceStartDate) }}</p>
+          </div>
+          <div class="rounded-xl bg-gray-50 p-4 dark:bg-gray-700/50">
+            <p class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Date de fin</p>
+            <p class="mt-1 text-sm font-semibold text-gray-900 dark:text-white">{{ formatDate(d.maintenanceEndDate) }}</p>
+          </div>
+          <div class="rounded-xl bg-gray-50 p-4 dark:bg-gray-700/50">
+            <p class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Dernière maintenance</p>
+            <p class="mt-1 text-sm font-semibold text-gray-900 dark:text-white">{{ formatDate(d.lastMaintenanceDate) }}</p>
+          </div>
+          <div class="rounded-xl bg-gray-50 p-4 dark:bg-gray-700/50">
+            <p class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Fréquence</p>
+            <p class="mt-1 text-sm font-semibold text-gray-900 dark:text-white">{{ getFrequencyLabel(d.maintenanceFrequency) }}</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT: Device Info -->
+      <div class="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+        <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Détails de l'appareil</h2>
+        <div class="mt-4 space-y-3">
+          <div class="rounded-xl bg-gray-50 p-4 dark:bg-gray-700/50">
+            <p class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Statut</p>
+            <p class="mt-1 text-sm font-semibold text-gray-900 dark:text-white capitalize">{{ d.status || 'N/A' }}</p>
+          </div>
+          <div *ngIf="d.location" class="rounded-xl bg-gray-50 p-4 dark:bg-gray-700/50">
+            <p class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Emplacement</p>
+            <p class="mt-1 text-sm font-semibold text-gray-900 dark:text-white">{{ d.location }}</p>
+          </div>
+          <div *ngIf="d.department" class="rounded-xl bg-gray-50 p-4 dark:bg-gray-700/50">
+            <p class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Département</p>
+            <p class="mt-1 text-sm font-semibold text-gray-900 dark:text-white">{{ d.department }}</p>
+          </div>
+          <div *ngIf="d.owner" class="rounded-xl bg-gray-50 p-4 dark:bg-gray-700/50">
+            <p class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Propriétaire</p>
+            <p class="mt-1 text-sm font-semibold text-gray-900 dark:text-white">{{ d.owner }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Modal -->
+<app-modal [isOpen]="showEditModal()" (close)="closeEditModal()" className="max-w-lg mx-4">
+  <div class="p-6">
+    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Modifier la maintenance</h3>
+
+    <div *ngIf="editError()" class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-950/20 dark:text-red-300 mb-4">
+      {{ editError() }}
+    </div>
+
+    <div class="grid gap-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Description</label>
+        <textarea
+          [(ngModel)]="editDescription"
+          rows="3"
+          class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+          placeholder="Décrire la maintenance à effectuer..."
+        ></textarea>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Date de fin *</label>
+        <div class="relative">
+          <div class="absolute inset-y-0 start-0 flex items-center ps-3 pointer-events-none">
+            <svg class="w-4 h-4 text-gray-500 dark:text-gray-400" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 10h16m-8-3V4M7 7V4m10 3V4M5 20h14a1 1 0 0 0 1-1V7a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1Zm3-7h.01v.01H8V13Zm4 0h.01v.01H12V13Zm4 0h.01v.01H16V13Zm-8 4h.01v.01H8V17Zm4 0h.01v.01H12V17Zm4 0h.01v.01H16V17Z"/></svg>
+          </div>
+          <input id="editEndDateInput" type="text"
+            class="block w-full ps-9 pe-3 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white text-sm rounded-xl focus:ring-blue-500 focus:border-blue-500 shadow-sm placeholder:text-gray-400"
+            placeholder="Sélectionner une date" />
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-6 flex justify-end gap-2">
+      <button type="button" (click)="closeEditModal()"
+        class="px-4 py-2 rounded-xl border border-gray-200 bg-white text-sm font-semibold text-gray-700 hover:bg-gray-100 transition-colors dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700">
+        Annuler
+      </button>
+      <button type="button" (click)="saveEdit()" [disabled]="editLoading()"
+        class="px-4 py-2 rounded-xl bg-blue-600 text-sm font-semibold text-white hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+        {{ editLoading() ? 'Enregistrement...' : 'Enregistrer' }}
+      </button>
+    </div>
+  </div>
+</app-modal>
