@@ -92,7 +92,7 @@
           <div class="mt-4 grid gap-3 sm:grid-cols-2">
             <div *ngIf="d.assignedTo" class="rounded-xl bg-gray-50 p-4 dark:bg-gray-700/50">
               <p class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Assigné à</p>
-              <p class="mt-1 text-sm font-semibold text-gray-900 dark:text-white">{{ d.assignedTo }}</p>
+              <p class="mt-1 text-sm font-semibold text-gray-900 dark:text-white">{{ d.assignedToName || d.assignedTo }}</p>
             </div>
             <div *ngIf="d.assignedAt" class="rounded-xl bg-gray-50 p-4 dark:bg-gray-700/50">
               <p class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Date d'affectation</p>
@@ -100,7 +100,7 @@
             </div>
             <div *ngIf="d.assignedBy" class="rounded-xl bg-gray-50 p-4 dark:bg-gray-700/50">
               <p class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Assigné par</p>
-              <p class="mt-1 text-sm font-semibold text-gray-900 dark:text-white">{{ d.assignedBy }}</p>
+              <p class="mt-1 text-sm font-semibold text-gray-900 dark:text-white">{{ d.assignedByName || d.assignedBy }}</p>
             </div>
           </div>
         </div>
