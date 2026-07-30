@@ -1,6 +1,6 @@
 {
   "buildCommand": "npm run build",
-  "outputDirectory": "dist/ng-tailadmin",
+  "outputDirectory": "dist/ng-tailadmin/browser",
   "devCommand": "npm start",
   "installCommand": "npm install",
   "framework": "angular",
