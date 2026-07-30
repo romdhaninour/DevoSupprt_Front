@@ -170,13 +170,13 @@
                     style="max-height: calc(100vh - 40px); overflow-y: auto;"
                   >
                     <button
-                      (click)="openRestoreModal(user)"
+                      (click)="openRestoreModal(user); $event.stopPropagation()"
                       class="w-full rounded-lg px-3 py-2 text-left text-xs font-medium text-gray-600 transition-all duration-200 hover:bg-green-50 hover:text-green-600 dark:text-gray-400 dark:hover:bg-green-900/30 dark:hover:text-green-400"
                     >
                       Restaurer
                     </button>
                     <button
-                      (click)="openDeleteModal(user)"
+                      (click)="openDeleteModal(user); $event.stopPropagation()"
                       class="w-full rounded-lg px-3 py-2 text-left text-xs font-medium text-gray-600 transition-all duration-200 hover:bg-red-50 hover:text-red-600 dark:text-gray-400 dark:hover:bg-red-900/30 dark:hover:text-red-400"
                     >
                       Supprimer
@@ -301,13 +301,13 @@
             </button>
             <div *ngIf="openActionMenuId() === user._id" class="flex min-w-[180px] flex-col gap-1 rounded-xl border border-gray-200 bg-white p-2 shadow-xl dark:border-gray-700 dark:bg-gray-800">
               <button
-                (click)="openRestoreModal(user)"
+                (click)="openRestoreModal(user); $event.stopPropagation()"
                 class="w-full rounded-lg px-3 py-2 text-left text-xs font-medium text-gray-600 transition-all duration-200 hover:bg-green-50 hover:text-green-600 dark:text-gray-400 dark:hover:bg-green-900/30 dark:hover:text-green-400"
               >
                 Restaurer
               </button>
               <button
-                (click)="openDeleteModal(user)"
+                (click)="openDeleteModal(user); $event.stopPropagation()"
                 class="w-full rounded-lg px-3 py-2 text-left text-xs font-medium text-gray-600 transition-all duration-200 hover:bg-red-50 hover:text-red-600 dark:text-gray-400 dark:hover:bg-red-900/30 dark:hover:text-red-400"
               >
                 Supprimer
