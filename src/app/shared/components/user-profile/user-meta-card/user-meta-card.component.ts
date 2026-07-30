@@ -1,5 +1,6 @@
 import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { environment } from '../../../../../environments/environment';
 
 @Component({
   selector: 'app-user-meta-card',
@@ -25,7 +26,7 @@ export class UserMetaCardComponent {
         : '');
 
     if (userId && profilePicture) {
-      return `http://localhost:3000/users/${userId}/profile-picture`;
+      return `${environment.apiUrl}/users/${userId}/profile-picture`;
     }
 
     return '';

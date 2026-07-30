@@ -4,6 +4,7 @@ import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { ApiService } from '../../services/api.service';
 import { User } from '../../models/user.model';
 import { Ticket } from '../../models/ticket.model';
+import { environment } from '../../../environments/environment';
 import { UserMetaCardComponent } from '../../shared/components/user-profile/user-meta-card/user-meta-card.component';
 import { UserInfoCardComponent } from '../../shared/components/user-profile/user-info-card/user-info-card.component';
 
@@ -201,7 +202,7 @@ export class UserDetailComponent implements OnInit {
 
   getProfilePictureUrl(user: User): string {
     if (user.profilePicture && user.profilePicture !== '') {
-      return `http://localhost:3000/users/${user._id}/profile-picture`;
+      return `${environment.apiUrl}/users/${user._id}/profile-picture`;
     }
     return '';
   }
