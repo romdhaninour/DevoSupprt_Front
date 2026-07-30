@@ -3,6 +3,7 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable, BehaviorSubject } from 'rxjs';
 import { io, Socket } from 'socket.io-client';
 import { ApiService } from './api.service';
+import { environment } from '../../environments/environment';
 
 export interface ChatMessage {
   _id: string;
@@ -46,7 +47,7 @@ export interface Conversation {
 })
 export class ChatService {
   private socket: Socket | null = null;
-  private apiUrl = 'http://localhost:3000';
+  private apiUrl = environment.apiUrl;
   
   // BehaviorSubjects for real-time updates
   private newMessageSubject = new BehaviorSubject<ChatMessage | null>(null);

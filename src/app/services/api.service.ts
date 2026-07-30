@@ -4,12 +4,13 @@ import { Observable } from 'rxjs';
 import { firstValueFrom } from 'rxjs';
 import { User } from '../models/user.model';
 import { ImageCompressionUtil } from '../utils/image-compression.util';
+import { environment } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class ApiService {
-  private apiUrl = 'http://localhost:3000';
+  private apiUrl = environment.apiUrl;
 
   constructor(private http: HttpClient) {}
 
