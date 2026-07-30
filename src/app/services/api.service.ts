@@ -22,12 +22,16 @@ export class ApiService {
     return { headers };
   }
 
-  getUsers(): Observable<User[]> {
-    return this.http.get<User[]>(`${this.apiUrl}/users`, this.getAuthHeaders());
+  getUsers(sortOrder?: string): Observable<User[]> {
+    let url = `${this.apiUrl}/users`;
+    if (sortOrder) url += `?sortOrder=${sortOrder}`;
+    return this.http.get<User[]>(url, this.getAuthHeaders());
   }
 
-  getArchivedUsers(): Observable<User[]> {
-    return this.http.get<User[]>(`${this.apiUrl}/users/archived`);
+  getArchivedUsers(sortOrder?: string): Observable<User[]> {
+    let url = `${this.apiUrl}/users/archived`;
+    if (sortOrder) url += `?sortOrder=${sortOrder}`;
+    return this.http.get<User[]>(url, this.getAuthHeaders());
   }
 
   createUser(data: Partial<User>): Observable<User> {
@@ -79,7 +83,7 @@ export class ApiService {
     });
   }
 
-  getDevices(page?: number, limit?: number, search?: string, status?: string, type?: string): Observable<{ devices: any[]; total: number; page: number; limit: number }> {
+  getDevices(page?: number, limit?: number, search?: string, status?: string, type?: string, sortOrder?: string): Observable<{ devices: any[]; total: number; page: number; limit: number }> {
     let url = `${this.apiUrl}/devices`;
     const params = [];
     if (page) params.push(`page=${page}`);
@@ -87,17 +91,19 @@ export class ApiService {
     if (search) params.push(`search=${search}`);
     if (status && status !== 'all') params.push(`status=${status}`);
     if (type && type !== 'all') params.push(`type=${type}`);
+    if (sortOrder) params.push(`sortOrder=${sortOrder}`);
     if (params.length > 0) url += `?${params.join('&')}`;
     return this.http.get<{ devices: any[]; total: number; page: number; limit: number }>(url, this.getAuthHeaders());
   }
 
-  getAssignedDevices(page?: number, limit?: number, search?: string, userId?: string): Observable<{ devices: any[]; total: number; page: number; limit: number }> {
+  getAssignedDevices(page?: number, limit?: number, search?: string, userId?: string, sortOrder?: string): Observable<{ devices: any[]; total: number; page: number; limit: number }> {
     let url = `${this.apiUrl}/devices/assigned`;
     const params = [];
     if (page) params.push(`page=${page}`);
     if (limit) params.push(`limit=${limit}`);
     if (search) params.push(`search=${search}`);
     if (userId) params.push(`userId=${userId}`);
+    if (sortOrder) params.push(`sortOrder=${sortOrder}`);
     if (params.length > 0) url += `?${params.join('&')}`;
     return this.http.get<{ devices: any[]; total: number; page: number; limit: number }>(url, this.getAuthHeaders());
   }
@@ -229,12 +235,16 @@ export class ApiService {
     return this.http.get(`${this.apiUrl}/health`);
   }
 
+  getDashboardStats(): Observable<any> {
+    return this.http.get(`${this.apiUrl}/dashboard/stats`, this.getAuthHeaders());
+  }
+
   // Ticket API methods
   createTicket(data: any): Observable<any> {
     return this.http.post(`${this.apiUrl}/tickets`, data, this.getAuthHeaders());
   }
 
-  getTickets(status?: string, priority?: string, issueType?: string, startDate?: string, endDate?: string, mine?: boolean): Observable<{ tickets: any[]; total: number }> {
+  getTickets(status?: string, priority?: string, issueType?: string, startDate?: string, endDate?: string, mine?: boolean, sortOrder?: string): Observable<{ tickets: any[]; total: number }> {
     let url = `${this.apiUrl}/tickets`;
     const params = [];
     if (status) params.push(`status=${status}`);
@@ -243,6 +253,7 @@ export class ApiService {
     if (startDate) params.push(`startDate=${startDate}`);
     if (endDate) params.push(`endDate=${endDate}`);
     if (mine) params.push(`mine=true`);
+    if (sortOrder) params.push(`sortOrder=${sortOrder}`);
     if (params.length > 0) url += `?${params.join('&')}`;
     return this.http.get<{ tickets: any[]; total: number }>(url, this.getAuthHeaders());
   }
@@ -265,5 +276,50 @@ export class ApiService {
 
   deleteTicket(id: string): Observable<{ message: string }> {
     return this.http.delete<{ message: string }>(`${this.apiUrl}/tickets/${id}`, this.getAuthHeaders());
+  }
+
+  getTicketsByUserId(userId: string): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/tickets/user/${userId}`, this.getAuthHeaders());
+  }
+
+  // Device Types API
+  getDeviceTypes(sortOrder?: string): Observable<any[]> {
+    let url = `${this.apiUrl}/device-types`;
+    if (sortOrder) url += `?sortOrder=${sortOrder}`;
+    return this.http.get<any[]>(url, this.getAuthHeaders());
+  }
+
+  createDeviceType(data: { name: string; description?: string }): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/device-types`, data, this.getAuthHeaders());
+  }
+
+  updateDeviceType(id: string, data: { name: string; description?: string }): Observable<any> {
+    return this.http.patch<any>(`${this.apiUrl}/device-types/${id}`, data, this.getAuthHeaders());
+  }
+
+  deleteDeviceType(id: string): Observable<{ message: string }> {
+    return this.http.delete<{ message: string }>(`${this.apiUrl}/device-types/${id}`, this.getAuthHeaders());
+  }
+
+  // Device Maintenance API (embedded in Device)
+  getMaintenanceDevices(month?: string, year?: string): Observable<any[]> {
+    let url = `${this.apiUrl}/devices/with-maintenance`;
+    const params = [];
+    if (month) params.push(`month=${month}`);
+    if (year) params.push(`year=${year}`);
+    if (params.length > 0) url += `?${params.join('&')}`;
+    return this.http.get<any[]>(url, this.getAuthHeaders());
+  }
+
+  updateDeviceMaintenance(id: string, data: { maintenanceDescription?: string; maintenanceEndDate?: string; maintenanceFrequency?: string }): Observable<any> {
+    return this.http.patch<any>(`${this.apiUrl}/devices/${id}/maintenance`, data, this.getAuthHeaders());
+  }
+
+  markDeviceAsMaintained(id: string): Observable<any> {
+    return this.http.patch<any>(`${this.apiUrl}/devices/${id}/mark-maintained`, {}, this.getAuthHeaders());
+  }
+
+  getDeviceById(id: string): Observable<any> {
+    return this.http.get<any>(`${this.apiUrl}/devices/${id}`, this.getAuthHeaders());
   }
 }

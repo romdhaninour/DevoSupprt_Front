@@ -1,5 +1,5 @@
 
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { PageBreadcrumbComponent } from '../../shared/components/common/page-breadcrumb/page-breadcrumb.component';
@@ -8,6 +8,7 @@ import { UserInfoCardComponent } from '../../shared/components/user-profile/user
 import { ModalComponent } from '../../shared/components/ui/modal/modal.component';
 import { ApiService } from '../../services/api.service';
 import { ImageCompressionUtil } from '../../utils/image-compression.util';
+import { Ticket } from '../../models/ticket.model';
 
 @Component({
   selector: 'app-profile',
@@ -23,6 +24,8 @@ import { ImageCompressionUtil } from '../../utils/image-compression.util';
 })
 export class ProfileComponent implements OnInit {
   user: any = {};
+  tickets = signal<Ticket[]>([]);
+  devices = signal<any[]>([]);
   isEditModalOpen = false;
   editForm = {
     prenom: '',
@@ -54,12 +57,96 @@ export class ProfileComponent implements OnInit {
           nom: currentUser.nom || '',
           profilePicture: currentUser.profilePicture || localProfilePicture || ''
         };
+        this.loadTickets();
+        this.loadDevices();
       },
       error: (err) => {
         console.error('Failed to load current user data:', err);
         this.loadFromLocalStorage();
       }
     });
+  }
+
+  loadTickets() {
+    this.apiService.getTickets(this.user._id ? undefined : undefined, undefined, undefined, undefined, undefined, true).subscribe({
+      next: (res) => {
+        this.tickets.set(res.tickets || []);
+      },
+      error: (err) => {
+        console.error('Failed to load tickets:', err);
+      }
+    });
+  }
+
+  loadDevices() {
+    this.apiService.getAssignedDevices(1, 100).subscribe({
+      next: (res) => {
+        this.devices.set(res.devices || []);
+      },
+      error: (err) => {
+        console.error('Failed to load devices:', err);
+      }
+    });
+  }
+
+  getTicketStatusColor(status: string): string {
+    switch (status) {
+      case 'open': return 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400';
+      case 'in_progress': return 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400';
+      case 'resolved': return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400';
+      case 'closed': return 'bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400';
+      default: return 'bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400';
+    }
+  }
+
+  getTicketPriorityColor(priority: string): string {
+    switch (priority) {
+      case 'urgent': return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400';
+      case 'high': return 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400';
+      case 'medium': return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400';
+      case 'low': return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400';
+      default: return 'bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400';
+    }
+  }
+
+  getDeviceStatusColor(status: string): string {
+    switch (status) {
+      case 'available': return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400';
+      case 'assigned': return 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400';
+      case 'maintenance': return 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400';
+      case 'retired': return 'bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400';
+      default: return 'bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400';
+    }
+  }
+
+  getTicketStatusLabel(status: string): string {
+    switch (status) {
+      case 'open': return 'Ouvert';
+      case 'in_progress': return 'En cours';
+      case 'resolved': return 'Résolu';
+      case 'closed': return 'Fermé';
+      default: return status;
+    }
+  }
+
+  getDeviceStatusLabel(status: string): string {
+    switch (status) {
+      case 'available': return 'Disponible';
+      case 'assigned': return 'Assigné';
+      case 'maintenance': return 'Maintenance';
+      case 'retired': return 'Retiré';
+      default: return status;
+    }
+  }
+
+  getPriorityLabel(priority: string): string {
+    switch (priority) {
+      case 'urgent': return 'Urgent';
+      case 'high': return 'Haute';
+      case 'medium': return 'Moyenne';
+      case 'low': return 'Basse';
+      default: return priority;
+    }
   }
 
   loadFromLocalStorage() {

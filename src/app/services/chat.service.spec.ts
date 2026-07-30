@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
-import { of } from 'rxjs';
+import { of, skip } from 'rxjs';
 import { ChatService, ChatMessage, Conversation } from './chat.service';
 import { ApiService } from './api.service';
 
@@ -178,7 +178,7 @@ describe('ChatService', () => {
     localStorage.setItem('auth_token', 'test-token');
     service.connectSocket();
 
-    service.newMessage$.subscribe(message => {
+    service.newMessage$.pipe(skip(1)).subscribe(message => {
       expect(message).toBeTruthy();
       done();
     });
@@ -188,7 +188,7 @@ describe('ChatService', () => {
   });
 
   it('should emit message read through observable', (done) => {
-    service.messageRead$.subscribe(data => {
+    service.messageRead$.pipe(skip(1)).subscribe(data => {
       expect(data).toEqual({ messageId: '1' });
       done();
     });
@@ -197,7 +197,7 @@ describe('ChatService', () => {
   });
 
   it('should emit unread count through observable', (done) => {
-    service.unreadCount$.subscribe(count => {
+    service.unreadCount$.pipe(skip(1)).subscribe(count => {
       expect(count).toBe(5);
       done();
     });
@@ -206,7 +206,7 @@ describe('ChatService', () => {
   });
 
   it('should emit typing status through observable', (done) => {
-    service.typing$.subscribe(data => {
+    service.typing$.pipe(skip(1)).subscribe(data => {
       expect(data).toEqual({ userId: 'user1', isTyping: true });
       done();
     });

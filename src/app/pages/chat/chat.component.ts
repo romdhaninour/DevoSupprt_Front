@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject, signal, OnInit, OnDestroy, computed } from '@angular/core';
+import { Component, ElementRef, ViewChild, inject, signal, OnInit, OnDestroy, computed } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ChatService, ChatMessage, Conversation } from '../../services/chat.service';
 import { ApiService } from '../../services/api.service';
@@ -14,33 +14,66 @@ import { firstValueFrom, Subscription } from 'rxjs';
   styleUrls: ['./chat.component.css']
 })
 export class ChatComponent implements OnInit, OnDestroy {
+  @ViewChild('emojiPicker') emojiPickerRef!: ElementRef;
+
   private chatService = inject(ChatService);
   private apiService = inject(ApiService);
 
-  // State
   conversations = signal<Conversation[]>([]);
   selectedConversation = signal<Conversation | null>(null);
   messages = signal<ChatMessage[]>([]);
   newMessage = signal('');
   loading = signal(false);
   error = signal<string | null>(null);
-  
-  // New conversation state
+
   showNewConversation = signal(false);
   availableUsers = signal<User[]>([]);
   searchQuery = signal('');
   selectedUser = signal<User | null>(null);
-  
-  // Typing indicator
+
   isTyping = signal(false);
+  typingUser = signal<string>('');
   typingTimeout: any;
-  
-  // Current user
+  loadingMessages = signal(false);
+
   currentUser = signal<User | null>(null);
   currentUserId = computed(() => this.currentUser()?._id);
   userRole = computed(() => this.currentUser()?.role);
-  
-  // Subscriptions
+
+  showEmojiPicker = signal(false);
+  activeReactionPicker = signal<string | null>(null);
+  commonEmojis = ['👍', '❤️', '😂', '😮', '😢', '🎉', '🔥', '👏'];
+  reactionEmojis = ['👍', '❤️', '😂', '😮', '😢', '🎉', '🔥', '👏', '💯', '🙏'];
+  previewImage: string | null = null;
+  selectedFile: File | null = null;
+  lightboxImage: string | null = null;
+  sending = signal(false);
+
+  groupedMessages = computed(() => {
+    const msgs = this.messages();
+    if (!msgs.length) return [];
+
+    const groups: { date: string; messages: any[] }[] = [];
+    let currentGroup: { date: string; messages: any[] } | null = null;
+
+    for (const msg of msgs) {
+      const date = new Date(msg.createdAt).toLocaleDateString('fr-FR', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+
+      if (!currentGroup || currentGroup.date !== date) {
+        currentGroup = { date, messages: [] };
+        groups.push(currentGroup);
+      }
+      currentGroup.messages.push(msg);
+    }
+
+    return groups;
+  });
+
   private subscriptions: Subscription[] = [];
 
   ngOnInit() {
@@ -48,9 +81,17 @@ export class ChatComponent implements OnInit, OnDestroy {
     this.chatService.connectSocket();
     this.setupSocketListeners();
     this.loadConversations();
+
+    this.chatService.reaction$.subscribe(data => {
+      if (!data) return;
+      this.messages.set(this.messages().map(m =>
+        m._id === data.messageId ? { ...m, reactions: data.reactions } : m
+      ));
+    });
   }
 
   ngOnDestroy() {
+    this.showEmojiPicker.set(false);
     this.chatService.disconnect();
     this.subscriptions.forEach(sub => sub.unsubscribe());
     if (this.typingTimeout) {
@@ -63,7 +104,6 @@ export class ChatComponent implements OnInit, OnDestroy {
     if (userStr) {
       this.currentUser.set(JSON.parse(userStr));
     } else {
-      // Fallback: construct user from individual localStorage keys
       const user: User = {
         _id: localStorage.getItem('user_id') || '',
         nom: localStorage.getItem('user_nom') || '',
@@ -76,7 +116,6 @@ export class ChatComponent implements OnInit, OnDestroy {
       };
       if (user._id) {
         this.currentUser.set(user);
-        console.log('Loaded user from individual localStorage keys:', user);
       }
     }
   }
@@ -94,11 +133,14 @@ export class ChatComponent implements OnInit, OnDestroy {
         }
       }),
       this.chatService.typing$.subscribe(data => {
-        if (data && this.selectedConversation()) {
-          const partnerId = this.selectedConversation()!.partner._id;
-          if (data.userId === partnerId) {
+        if (data) {
+          const partnerId = this.getActivePartnerId();
+          if (partnerId && data.userId === partnerId) {
             this.isTyping.set(data.isTyping);
             if (data.isTyping) {
+              const partner = this.getPartnerInfo();
+              this.typingUser.set(partner ? `${partner.prenom} ${partner.nom}` : '');
+              if (this.typingTimeout) clearTimeout(this.typingTimeout);
               this.typingTimeout = setTimeout(() => {
                 this.isTyping.set(false);
               }, 3000);
@@ -113,36 +155,46 @@ export class ChatComponent implements OnInit, OnDestroy {
     const currentUserId = this.currentUserId();
     if (!currentUserId) return;
 
-    const isFromSelected = this.selectedConversation()?.partner._id === message.sender._id;
-    
+    const partnerId = this.getActivePartnerId();
+    const isFromSelected = partnerId && message.sender._id === partnerId;
+
     if (isFromSelected) {
-      // Add message to current conversation
       this.messages.update(msgs => [...msgs, message]);
-      // Mark as read
       this.chatService.markAsRead(message._id);
     } else {
-      // Reload conversations to update unread counts
       this.loadConversations();
     }
   }
 
   private handleMessageRead(messageId: string) {
-    this.messages.update(msgs => 
-      msgs.map(msg => 
+    this.messages.update(msgs =>
+      msgs.map(msg =>
         msg._id === messageId ? { ...msg, read: true } : msg
       )
     );
+  }
+
+  getActivePartnerId(): string | null {
+    if (this.selectedUser()) return this.selectedUser()!._id;
+    if (this.selectedConversation()) return this.selectedConversation()!.partner._id;
+    return null;
+  }
+
+  private getPartnerInfo(): { prenom: string; nom: string } | null {
+    if (this.selectedUser()) {
+      return { prenom: this.selectedUser()!.prenom, nom: this.selectedUser()!.nom };
+    }
+    if (this.selectedConversation()) {
+      const p = this.selectedConversation()!.partner;
+      return { prenom: p.prenom, nom: p.nom };
+    }
+    return null;
   }
 
   async loadConversations() {
     this.loading.set(true);
     try {
       const convs = await firstValueFrom(this.chatService.getConversations());
-      console.log('Loaded conversations:', convs);
-      convs.forEach((conv, index) => {
-        console.log(`Conversation ${index}:`, conv);
-        console.log(`Partner:`, conv.partner);
-      });
       this.conversations.set(convs);
     } catch (err) {
       console.error('Failed to load conversations:', err);
@@ -156,51 +208,23 @@ export class ChatComponent implements OnInit, OnDestroy {
     this.loading.set(true);
     try {
       const users = await firstValueFrom(this.apiService.getUsers());
-      console.log('Loaded users:', users);
       const currentUserId = this.currentUserId();
       const userRole = this.userRole();
-      console.log('Current user ID:', currentUserId, 'Role:', userRole);
-      
-      // Filter users based on role-based chat rules
-      // IT ↔ Consultant (allowed)
-      // IT ↔ Admin (allowed)
-      // Admin ↔ IT (allowed)
-      // Admin ↔ Consultant (NOT allowed)
-      // Consultant ↔ Consultant (NOT allowed)
-      // Consultant ↔ Admin (NOT allowed)
+
       let filteredUsers: User[];
       if (userRole === 'CONSULTANT') {
-        // Consultants can only chat with IT (NOT Admin)
-        filteredUsers = users.filter(u => 
-          u._id !== currentUserId && u.role === 'IT'
-        );
+        filteredUsers = users.filter(u => u._id !== currentUserId && u.role === 'IT');
       } else if (userRole === 'IT') {
-        // IT can chat with Consultants and ADMIN
-        filteredUsers = users.filter(u => 
-          u._id !== currentUserId && (u.role === 'CONSULTANT' || u.role === 'ADMIN')
-        );
+        filteredUsers = users.filter(u => u._id !== currentUserId && (u.role === 'CONSULTANT' || u.role === 'ADMIN'));
       } else if (userRole === 'ADMIN') {
-        // Admin can only chat with IT (NOT Consultants)
-        filteredUsers = users.filter(u => 
-          u._id !== currentUserId && u.role === 'IT'
-        );
+        filteredUsers = users.filter(u => u._id !== currentUserId && u.role === 'IT');
       } else {
-        // Other roles: no chat allowed
         filteredUsers = [];
       }
-      
-      console.log('Filtered users by role:', filteredUsers);
-      
-      // Don't filter out users who already have conversations - allow re-selecting them
-      // const existingPartnerIds = this.conversations().map(c => c.partner._id);
-      // console.log('Existing partner IDs:', existingPartnerIds);
-      // filteredUsers = filteredUsers.filter(u => !existingPartnerIds.includes(u._id));
-      
-      console.log('Final available users:', filteredUsers);
+
       this.availableUsers.set(filteredUsers);
     } catch (err) {
       console.error('Failed to load users:', err);
-      this.error.set('Failed to load users');
     } finally {
       this.loading.set(false);
     }
@@ -219,152 +243,300 @@ export class ChatComponent implements OnInit, OnDestroy {
     this.searchQuery.set('');
   }
 
-  selectUser(user: User) {
-    this.selectedUser.set(user);
-  }
-
-  async startConversation() {
-    const user = this.selectedUser();
-    if (!user) return;
-
-    // Create a temporary conversation object
-    const tempConversation: Conversation = {
-      partner: {
-        _id: user._id,
-        nom: user.nom,
-        prenom: user.prenom,
-        email: user.email,
-        role: user.role,
-      },
-      lastMessage: {
-        _id: '',
-        sender: { _id: '', nom: '', prenom: '', email: '' },
-        receiver: { _id: '', nom: '', prenom: '', email: '' },
-        message: 'Nouvelle conversation',
-        read: false,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      },
-      unreadCount: 0,
-    };
-
-    this.selectedConversation.set(tempConversation);
-    this.messages.set([]);
-    this.closeNewConversation();
-  }
-
-  async selectConversation(conversation: Conversation) {
+  selectConversation(conversation: Conversation) {
     this.selectedConversation.set(conversation);
     this.messages.set([]);
-    this.loading.set(true);
-    
-    try {
-      const msgs = await firstValueFrom(this.chatService.getConversation(conversation.partner._id));
-      this.messages.set(msgs.reverse());
-      
-      // Mark conversation as read
-      this.chatService.joinConversation(conversation.partner._id);
-      
-      // Update unread count
-      this.conversations.update(convs => 
-        convs.map(c => 
-          c.partner._id === conversation.partner._id 
-            ? { ...c, unreadCount: 0 }
-            : c
-        )
-      );
-    } catch (err) {
-      this.error.set('Failed to load messages');
-    } finally {
-      this.loading.set(false);
-    }
-  }
+    this.loadingMessages.set(true);
 
-  sendMessage() {
-    const message = this.newMessage().trim();
-    if (!message || !this.selectedConversation()) return;
+    this.chatService.getConversation(conversation.partner._id).subscribe({
+      next: (msgs) => {
+        this.messages.set(msgs.reverse());
+        this.chatService.joinConversation(conversation.partner._id);
 
-    const receiverId = this.selectedConversation()!.partner._id;
-    
-    this.chatService.sendMessage(receiverId, message).subscribe({
-      next: (sentMessage) => {
-        this.messages.update(msgs => [...msgs, sentMessage]);
-        this.newMessage.set('');
-        
-        // If this was the first message, reload conversations
-        if (this.messages().length === 1) {
-          this.loadConversations();
-        }
+        this.conversations.update(convs =>
+          convs.map(c =>
+            c.partner._id === conversation.partner._id
+              ? { ...c, unreadCount: 0 }
+              : c
+          )
+        );
       },
-      error: () => {
-        this.error.set('Failed to send message');
+      error: (err) => {
+        console.error('Error loading messages:', err);
+        this.error.set('Failed to load messages');
+      },
+      complete: () => {
+        this.loadingMessages.set(false);
       }
     });
   }
 
+  selectUserFromList(user: User) {
+    const existingConv = this.conversations().find(c => c.partner._id === user._id);
+    if (existingConv) {
+      this.selectConversation(existingConv);
+    } else {
+      const tempConversation: Conversation = {
+        partner: {
+          _id: user._id,
+          nom: user.nom,
+          prenom: user.prenom,
+          email: user.email,
+          role: user.role,
+        },
+        lastMessage: {
+          _id: '',
+          sender: { _id: '', nom: '', prenom: '', email: '' },
+          receiver: { _id: '', nom: '', prenom: '', email: '' },
+          message: '',
+          read: false,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+        unreadCount: 0,
+      };
+      this.selectedConversation.set(tempConversation);
+      this.messages.set([]);
+    }
+    this.selectedUser.set(user);
+    this.closeNewConversation();
+  }
+
+  sendMessage() {
+    const message = this.newMessage().trim();
+    const partnerId = this.getActivePartnerId();
+    if ((!message && !this.selectedFile) || !partnerId || this.sending()) return;
+
+    this.sending.set(true);
+
+    if (this.selectedFile) {
+      console.log('Uploading image:', this.selectedFile.name, this.selectedFile.size);
+      this.chatService.uploadImage(this.selectedFile).subscribe({
+        next: (res) => {
+          console.log('Image uploaded successfully:', res);
+          this.chatService.sendMessage(partnerId, message || '', res.url).subscribe({
+            next: (msg) => {
+              console.log('Message sent with image:', msg);
+              this.messages.set([...this.messages(), msg]);
+              this.newMessage.set('');
+              this.selectedFile = null;
+              this.previewImage = null;
+              this.sending.set(false);
+            },
+            error: (err) => {
+              console.error('Error sending message with image:', err);
+              this.sending.set(false);
+            }
+          });
+        },
+        error: (err) => {
+          console.error('Error uploading image:', err);
+          alert('Failed to upload image. Please try again.');
+          this.sending.set(false);
+        }
+      });
+    } else {
+      this.chatService.sendMessage(partnerId, message).subscribe({
+        next: (msg) => {
+          this.messages.set([...this.messages(), msg]);
+          this.newMessage.set('');
+          this.sending.set(false);
+        },
+        error: (err) => {
+          console.error('Error sending message:', err);
+          this.error.set('Failed to send message');
+          this.sending.set(false);
+        }
+      });
+    }
+  }
+
   onTyping() {
-    if (!this.selectedConversation()) return;
-    
-    this.chatService.sendTypingStatus(this.selectedConversation()!.partner._id, true);
-    
+    const partnerId = this.getActivePartnerId();
+    if (!partnerId) return;
+
+    this.chatService.sendTypingStatus(partnerId, true);
+
     if (this.typingTimeout) {
       clearTimeout(this.typingTimeout);
     }
-    
+
     this.typingTimeout = setTimeout(() => {
-      this.chatService.sendTypingStatus(this.selectedConversation()!.partner._id, false);
+      this.chatService.sendTypingStatus(partnerId, false);
     }, 1000);
   }
 
   getPartnerName(conversation: Conversation): string {
-    const partner = conversation.partner;
-    console.log('getPartnerName - partner:', partner);
-    console.log('getPartnerName - partner.prenom:', partner.prenom, 'partner.nom:', partner.nom);
-    return `${partner.prenom} ${partner.nom}`;
+    return `${conversation.partner.prenom} ${conversation.partner.nom}`;
   }
 
   getPartnerInitials(conversation: Conversation): string {
-    const partner = conversation.partner;
-    return `${partner.prenom?.[0] || ''}${partner.nom?.[0] || ''}`.toUpperCase();
+    const p = conversation.partner;
+    return `${p.prenom?.[0] || ''}${p.nom?.[0] || ''}`.toUpperCase();
   }
 
-  getUserName(user: User): string {
-    return `${user.prenom} ${user.nom}`;
-  }
+  formatTime(dateStr: string): string {
+    const now = Date.now();
+    const date = new Date(dateStr).getTime();
+    const diff = now - date;
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(diff / 3600000);
+    const days = Math.floor(diff / 86400000);
 
-  getUserInitials(user: User): string {
-    return `${user.prenom?.[0] || ''}${user.nom?.[0] || ''}`.toUpperCase();
-  }
-
-  formatTime(dateString: string): string {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMs / 3600000);
-    const diffDays = Math.floor(diffMs / 86400000);
-
-    if (diffMins < 1) return 'À l\'instant';
-    if (diffMins < 60) return `Il y a ${diffMins} min`;
-    if (diffHours < 24) return `Il y a ${diffHours} h`;
-    if (diffDays < 7) return `Il y a ${diffDays} j`;
-    
-    return date.toLocaleDateString('fr-FR');
+    if (minutes < 1) { return "À l'instant"; }
+    if (minutes < 60) { return `Il y a ${minutes} min`; }
+    if (hours < 24) { return `Il y a ${hours} h`; }
+    return `Il y a ${days} j`;
   }
 
   isMessageFromMe(message: ChatMessage): boolean {
-    return message.sender._id === this.currentUserId();
+    const senderId = String(message.sender?._id || message.sender);
+    const myId = String(this.currentUserId());
+    return senderId === myId;
+  }
+
+  isMine(msg: any): boolean {
+    const senderId = String(msg?.sender?._id || msg?.sender || '');
+    const myId = String(this.currentUserId() || '');
+    return senderId !== '' && myId !== '' && senderId === myId;
+  }
+
+  toggleReaction(messageId: string, emoji: string) {
+    this.chatService.toggleReaction(messageId, emoji);
+    this.activeReactionPicker.set(null);
+  }
+
+  toggleReactionPicker(messageId: string) {
+    if (this.activeReactionPicker() === messageId) {
+      this.activeReactionPicker.set(null);
+    } else {
+      this.activeReactionPicker.set(messageId);
+    }
+  }
+
+  isReactionPickerOpen(messageId: string): boolean {
+    return this.activeReactionPicker() === messageId;
+  }
+
+  getUniqueReactions(messageId: string): { emoji: string; count: number; reacted: boolean }[] {
+    const msg = this.messages().find(m => m._id === messageId);
+    if (!msg?.reactions || !msg.reactions.length) return [];
+
+    const myId = String(this.currentUserId() || '');
+    const map = new Map<string, { count: number; reacted: boolean }>();
+    for (const r of msg.reactions) {
+      const existing = map.get(r.emoji) || { count: 0, reacted: false };
+      existing.count++;
+      const rUserId = String(r.userId?._id || r.userId || '');
+      if (rUserId && rUserId === myId) existing.reacted = true;
+      map.set(r.emoji, existing);
+    }
+    return Array.from(map.entries()).map(([emoji, data]) => ({ emoji, ...data }));
+  }
+
+  onFileSelected(event: Event) {
+    const input = event.target as HTMLInputElement;
+    if (input.files?.length) {
+      const file = input.files[0];
+      this.selectedFile = file;
+      const reader = new FileReader();
+      reader.onload = () => this.previewImage = reader.result as string;
+      reader.readAsDataURL(file);
+    }
+  }
+
+  cancelImage() {
+    this.selectedFile = null;
+    this.previewImage = null;
+  }
+
+  toggleEmojiPicker() {
+    this.showEmojiPicker.update(v => !v);
+  }
+
+  addEmoji(emoji: string) {
+    this.newMessage.set(this.newMessage() + emoji);
+    this.showEmojiPicker.set(false);
+  }
+
+  openLightbox(url: string) {
+    this.lightboxImage = url;
+  }
+
+  closeLightbox() {
+    this.lightboxImage = null;
+  }
+
+  onMessageInput(value: string) {
+    this.newMessage.set(value);
+  }
+
+  handleKeyDown(event: KeyboardEvent) {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      this.sendMessage();
+    }
+  }
+
+  isUserOnline(userId: string): boolean {
+    return false;
+  }
+
+  unreadCount(userId: string): number {
+    const conv = this.conversations().find(c => c.partner._id === userId);
+    return conv?.unreadCount || 0;
+  }
+
+  onSearchChange(value: string) {
+    this.searchQuery.set(value);
   }
 
   get filteredUsers(): User[] {
     const query = this.searchQuery().toLowerCase();
     if (!query) return this.availableUsers();
-    
-    return this.availableUsers().filter(user => 
+
+    return this.availableUsers().filter(user =>
       user.nom.toLowerCase().includes(query) ||
       user.prenom.toLowerCase().includes(query) ||
       user.email.toLowerCase().includes(query)
     );
   }
-}
 
+  get hasActiveChat(): boolean {
+    return !!(this.selectedConversation() || this.selectedUser());
+  }
+
+  closeChat() {
+    this.selectedConversation.set(null);
+    this.selectedUser.set(null);
+    this.messages.set([]);
+    this.newMessage.set('');
+  }
+
+  get chatPartnerName(): string {
+    if (this.selectedUser()) return `${this.selectedUser()!.prenom} ${this.selectedUser()!.nom}`;
+    if (this.selectedConversation()) return this.getPartnerName(this.selectedConversation()!);
+    return '';
+  }
+
+  get chatPartnerEmail(): string {
+    if (this.selectedUser()) return this.selectedUser()!.email;
+    if (this.selectedConversation()) return this.selectedConversation()!.partner.email;
+    return '';
+  }
+
+  get chatPartnerRole(): string {
+    if (this.selectedUser()) return this.selectedUser()!.role;
+    if (this.selectedConversation()) return this.selectedConversation()!.partner.role;
+    return '';
+  }
+
+  get chatPartnerInitials(): string {
+    if (this.selectedUser()) {
+      const u = this.selectedUser()!;
+      return `${u.prenom?.[0] || ''}${u.nom?.[0] || ''}`.toUpperCase();
+    }
+    if (this.selectedConversation()) return this.getPartnerInitials(this.selectedConversation()!);
+    return '';
+  }
+}

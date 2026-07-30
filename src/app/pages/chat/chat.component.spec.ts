@@ -1,14 +1,16 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { FormsModule } from '@angular/forms';
 import { of, throwError } from 'rxjs';
 import { ChatComponent } from './chat.component';
 import { ChatService, ChatMessage, Conversation } from '../../services/chat.service';
+import { ApiService } from '../../services/api.service';
 import { User } from '../../models/user.model';
+import { NO_ERRORS_SCHEMA } from '@angular/core';
 
 describe('ChatComponent', () => {
   let component: ChatComponent;
   let fixture: ComponentFixture<ChatComponent>;
   let chatServiceSpy: jasmine.SpyObj<ChatService>;
+  let apiServiceSpy: jasmine.SpyObj<ApiService>;
 
   const mockUser: User = {
     _id: '507f1f77bcf86cd799439011',
@@ -54,7 +56,7 @@ describe('ChatComponent', () => {
   };
 
   beforeEach(async () => {
-    const spy = jasmine.createSpyObj('ChatService', [
+    const chatSpy = jasmine.createSpyObj('ChatService', [
       'connectSocket',
       'disconnect',
       'sendMessage',
@@ -69,25 +71,32 @@ describe('ChatComponent', () => {
       messageRead$: of(null),
       unreadCount$: of(0),
       typing$: of(null),
+      reaction$: of(null),
     });
 
+    const apiSpy = jasmine.createSpyObj('ApiService', [
+      'getUsers',
+    ]);
+
     await TestBed.configureTestingModule({
-      imports: [FormsModule],
-      declarations: [ChatComponent],
+      imports: [ChatComponent],
       providers: [
-        { provide: ChatService, useValue: spy },
+        { provide: ChatService, useValue: chatSpy },
+        { provide: ApiService, useValue: apiSpy },
       ],
+      schemas: [NO_ERRORS_SCHEMA]
     }).compileComponents();
 
     fixture = TestBed.createComponent(ChatComponent);
     component = fixture.componentInstance;
     chatServiceSpy = TestBed.inject(ChatService) as jasmine.SpyObj<ChatService>;
+    apiServiceSpy = TestBed.inject(ApiService) as jasmine.SpyObj<ApiService>;
 
-    // Mock localStorage
-    spyOn(localStorage, 'getItem').and.callFake((key: string) => {
-      if (key === 'user') return JSON.stringify(mockUser);
-      return null;
-    });
+    localStorage.setItem('user', JSON.stringify(mockUser));
+  });
+
+  afterEach(() => {
+    localStorage.removeItem('user');
   });
 
   it('should create', () => {
@@ -297,16 +306,22 @@ describe('ChatComponent', () => {
 
   describe('handleNewMessage', () => {
     it('should add message if from selected conversation', () => {
+      const messageFromPartner = {
+        ...mockMessage,
+        sender: { ...mockMessage.sender, _id: mockConversation.partner._id }
+      };
+      component.currentUser.set(mockUser);
       component.selectedConversation.set(mockConversation);
       component.messages.set([]);
       
-      component['handleNewMessage'](mockMessage);
+      component['handleNewMessage'](messageFromPartner);
       
-      expect(component.messages()).toContain(mockMessage);
-      expect(chatServiceSpy.markAsRead).toHaveBeenCalledWith(mockMessage._id);
+      expect(component.messages()).toContain(messageFromPartner);
+      expect(chatServiceSpy.markAsRead).toHaveBeenCalledWith(messageFromPartner._id);
     });
 
     it('should reload conversations if from other conversation', () => {
+      component.currentUser.set(mockUser);
       component.selectedConversation.set({
         ...mockConversation,
         partner: { ...mockConversation.partner, _id: 'different-id' },
@@ -317,6 +332,17 @@ describe('ChatComponent', () => {
       
       expect(component.loadConversations).toHaveBeenCalled();
     });
+
+    it('should not process message if no current user', () => {
+      component.currentUser.set(null);
+      component.selectedConversation.set(mockConversation);
+      component.messages.set([]);
+      
+      component['handleNewMessage'](mockMessage);
+      
+      expect(component.messages()).toEqual([]);
+      expect(chatServiceSpy.markAsRead).not.toHaveBeenCalled();
+    });
   });
 
   describe('handleMessageRead', () => {
@@ -326,6 +352,248 @@ describe('ChatComponent', () => {
       component['handleMessageRead'](mockMessage._id);
       
       expect(component.messages()[0].read).toBe(true);
+    });
+  });
+
+  describe('isMine', () => {
+    it('should return true for own message', () => {
+      component.currentUser.set(mockUser);
+      expect(component.isMine(mockMessage)).toBeTrue();
+    });
+
+    it('should return false for other message', () => {
+      component.currentUser.set({ ...mockUser, _id: 'other' });
+      expect(component.isMine(mockMessage)).toBeFalse();
+    });
+
+    it('should return false if sender is undefined', () => {
+      component.currentUser.set(mockUser);
+      expect(component.isMine({ sender: undefined })).toBeFalse();
+    });
+  });
+
+  describe('hasActiveChat', () => {
+    it('should return true when conversation is selected', () => {
+      component.selectedConversation.set(mockConversation);
+      expect(component.hasActiveChat).toBeTrue();
+    });
+
+    it('should return false when no conversation selected', () => {
+      component.selectedConversation.set(null);
+      expect(component.hasActiveChat).toBeFalse();
+    });
+  });
+
+  describe('chatPartnerName', () => {
+    it('should return partner full name from selected conversation', () => {
+      component.selectedConversation.set(mockConversation);
+      expect(component.chatPartnerName).toBe('Jane Smith');
+    });
+
+    it('should return empty string when no conversation', () => {
+      component.selectedConversation.set(null);
+      expect(component.chatPartnerName).toBe('');
+    });
+  });
+
+  describe('chatPartnerEmail', () => {
+    it('should return partner email from selected conversation', () => {
+      component.selectedConversation.set(mockConversation);
+      expect(component.chatPartnerEmail).toBe('jane.smith@example.com');
+    });
+
+    it('should return empty string when no conversation', () => {
+      component.selectedConversation.set(null);
+      expect(component.chatPartnerEmail).toBe('');
+    });
+  });
+
+  describe('chatPartnerRole', () => {
+    it('should return partner role from selected conversation', () => {
+      component.selectedConversation.set(mockConversation);
+      expect(component.chatPartnerRole).toBe('CONSULTANT');
+    });
+
+    it('should return empty string when no conversation', () => {
+      component.selectedConversation.set(null);
+      expect(component.chatPartnerRole).toBe('');
+    });
+  });
+
+  describe('chatPartnerInitials', () => {
+    it('should return partner initials from selected conversation', () => {
+      component.selectedConversation.set(mockConversation);
+      expect(component.chatPartnerInitials).toBe('JS');
+    });
+
+    it('should return empty string when no conversation', () => {
+      component.selectedConversation.set(null);
+      expect(component.chatPartnerInitials).toBe('');
+    });
+  });
+
+  describe('unreadCount', () => {
+    it('should return unread count for a specific user', () => {
+      component.conversations.set([
+        { ...mockConversation, unreadCount: 3 },
+      ]);
+      expect(component.unreadCount(mockConversation.partner._id)).toBe(3);
+    });
+
+    it('should return 0 when user not found', () => {
+      component.conversations.set([]);
+      expect(component.unreadCount('nonexistent')).toBe(0);
+    });
+  });
+
+  describe('openNewConversation / closeNewConversation', () => {
+    it('should set showNewConversation to true', () => {
+      component.openNewConversation();
+      expect(component.showNewConversation()).toBeTrue();
+    });
+
+    it('should close and reset new conversation state', () => {
+      component.showNewConversation.set(true);
+      component.selectedUser.set(mockUser);
+      component.searchQuery.set('test');
+      component.closeNewConversation();
+      expect(component.showNewConversation()).toBeFalse();
+      expect(component.selectedUser()).toBeNull();
+      expect(component.searchQuery()).toBe('');
+    });
+  });
+
+  describe('cancelImage', () => {
+    it('should reset image state', () => {
+      component.selectedFile = new File([''], 'test.jpg');
+      component.previewImage = 'data:image/jpeg;base64,xxx';
+      component.cancelImage();
+      expect(component.selectedFile).toBeNull();
+      expect(component.previewImage).toBeNull();
+    });
+  });
+
+  describe('toggleEmojiPicker', () => {
+    it('should toggle showEmojiPicker', () => {
+      component.showEmojiPicker.set(false);
+      component.toggleEmojiPicker();
+      expect(component.showEmojiPicker()).toBeTrue();
+      component.toggleEmojiPicker();
+      expect(component.showEmojiPicker()).toBeFalse();
+    });
+  });
+
+  describe('addEmoji', () => {
+    it('should append emoji to newMessage', () => {
+      component.newMessage.set('Hello ');
+      component.addEmoji('😊');
+      expect(component.newMessage()).toBe('Hello 😊');
+    });
+  });
+
+  describe('openLightbox / closeLightbox', () => {
+    it('should set and clear lightboxImage', () => {
+      component.openLightbox('image-url');
+      expect(component.lightboxImage).toBe('image-url');
+      component.closeLightbox();
+      expect(component.lightboxImage).toBeNull();
+    });
+  });
+
+  describe('onSearchChange', () => {
+    it('should set searchQuery', () => {
+      component.onSearchChange('test query');
+      expect(component.searchQuery()).toBe('test query');
+    });
+  });
+
+  describe('handleKeyDown', () => {
+    it('should send message on Enter without shift', () => {
+      spyOn(component, 'sendMessage');
+      component.handleKeyDown({ key: 'Enter', shiftKey: false, preventDefault: () => {} } as any);
+      expect(component.sendMessage).toHaveBeenCalled();
+    });
+
+    it('should not send message if Shift is pressed', () => {
+      spyOn(component, 'sendMessage');
+      component.handleKeyDown({ key: 'Enter', shiftKey: true, preventDefault: () => {} } as any);
+      expect(component.sendMessage).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('loadCurrentUser with localStorage fallback', () => {
+    it('should build user from individual localStorage keys', () => {
+      localStorage.removeItem('user');
+      localStorage.setItem('user_id', 'local-id');
+      localStorage.setItem('user_nom', 'Local');
+      localStorage.setItem('user_prenom', 'User');
+      localStorage.setItem('user_email', 'local@test.com');
+      localStorage.setItem('user_role', 'IT');
+
+      component['loadCurrentUser']();
+
+      expect(component.currentUser()?._id).toBe('local-id');
+      expect(component.currentUser()?.nom).toBe('Local');
+    });
+  });
+
+  describe('loadAvailableUsers', () => {
+    it('should filter users by role for ADMIN', async () => {
+      component.currentUser.set(mockUser);
+      apiServiceSpy.getUsers.and.returnValue(of([
+        { _id: '1', role: 'CONSULTANT' },
+        { _id: '2', role: 'IT' },
+        { _id: '3', role: 'ADMIN' },
+      ] as any));
+
+      await component.loadAvailableUsers();
+
+      expect(component.availableUsers().length).toBe(1);
+      expect(component.availableUsers()[0].role).toBe('IT');
+    });
+
+    it('should handle error', async () => {
+      component.currentUser.set(mockUser);
+      apiServiceSpy.getUsers.and.returnValue(throwError(() => new Error('fail')));
+
+      await component.loadAvailableUsers();
+
+      expect(component.availableUsers()).toEqual([]);
+    });
+  });
+
+  describe('selectUserFromList', () => {
+    it('should create temp conversation for new user', () => {
+      component.conversations.set([]);
+      component.selectedConversation.set(null);
+
+      component.selectUserFromList(mockUser);
+
+      expect(component.selectedConversation()?.partner._id).toBe(mockUser._id);
+      expect(component.showNewConversation()).toBeFalse();
+    });
+
+    it('should use existing conversation if available', () => {
+      const existingConv = { ...mockConversation, partner: { ...mockConversation.partner, _id: mockUser._id } };
+      component.conversations.set([existingConv]);
+      spyOn(component, 'selectConversation');
+
+      component.selectUserFromList(mockUser);
+
+      expect(component.selectConversation).toHaveBeenCalledWith(existingConv);
+    });
+  });
+
+  describe('isUserOnline', () => {
+    it('should return false', () => {
+      expect(component.isUserOnline('any-id')).toBeFalse();
+    });
+  });
+
+  describe('onMessageInput', () => {
+    it('should update newMessage signal', () => {
+      component.onMessageInput('test message');
+      expect(component.newMessage()).toBe('test message');
     });
   });
 });

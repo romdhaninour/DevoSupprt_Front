@@ -24,7 +24,13 @@ import { DeviceAllocationComponent } from './pages/device-allocation/device-allo
 import { TicketsComponent } from './pages/tickets/tickets.component';
 import { ChatComponent } from './pages/chat/chat.component';
 import { ConsultantDevicesComponent } from './pages/consultant-devices/consultant-devices.component';
+import { DeviceTypesComponent } from './pages/device-types/device-types.component';
+import { UserDetailComponent } from './pages/user-detail/user-detail.component';
+import { TicketDetailComponent } from './pages/ticket-detail/ticket-detail.component';
 import { AuthCallbackComponent } from './pages/auth-callback/auth-callback.component';
+import { DeviceMaintenanceComponent } from './pages/device-maintenance/device-maintenance.component';
+import { DeviceMaintenanceDetailComponent } from './pages/device-maintenance-detail/device-maintenance-detail.component';
+import { DeviceDetailComponent } from './pages/device-detail/device-detail.component';
 import { authGuard } from './guards/auth.guard';
 import { AdminGuard } from './guards/admin.guard';
 import { ITGuard } from './guards/it.guard';
@@ -39,79 +45,78 @@ export const routes: Routes = [
         path: '',
         component: EcommerceComponent,
         pathMatch: 'full',
-        title:
-          'Angular Ecommerce Dashboard | TailAdmin - Angular Admin Dashboard Template',
+        title: 'Tableau de bord | DevoSupport',
       },
       {
         path:'calendar',
         component:CalenderComponent,
-        title:'Angular Calender | TailAdmin - Angular Admin Dashboard Template'
+        title:'Calendrier | DevoSupport'
       },
       {
         path:'profile',
         component:ProfileComponent,
-        title:'Angular Profile Dashboard | TailAdmin - Angular Admin Dashboard Template'
+        title:'Profil | DevoSupport'
       },
       {
         path:'form-elements',
         component:FormElementsComponent,
-        title:'Angular Form Elements Dashboard | TailAdmin - Angular Admin Dashboard Template'
+        title:'Éléments de formulaire | DevoSupport'
       },
       {
         path:'basic-tables',
         component:BasicTablesComponent,
-        title:'Angular Basic Tables Dashboard | TailAdmin - Angular Admin Dashboard Template'
+        title:'Tableaux | DevoSupport'
       },
       {
         path:'blank',
         component:BlankComponent,
-        title:'Angular Blank Dashboard | TailAdmin - Angular Admin Dashboard Template'
+        title:'Page vide | DevoSupport'
       },
       // support tickets
       {
         path:'invoice',
         component:InvoicesComponent,
-        title:'Angular Invoice Details Dashboard | TailAdmin - Angular Admin Dashboard Template'
+        title:'Factures | DevoSupport'
       },
       {
         path:'line-chart',
         component:LineChartComponent,
-        title:'Angular Line Chart Dashboard | TailAdmin - Angular Admin Dashboard Template'
+        title:'Graphiques linéaires | DevoSupport'
       },
       {
         path:'bar-chart',
         component:BarChartComponent,
-        title:'Angular Bar Chart Dashboard | TailAdmin - Angular Admin Dashboard Template'
+        title:'Graphiques à barres | DevoSupport'
       },
       {
         path:'alerts',
         component:AlertsComponent,
-        title:'Angular Alerts Dashboard | TailAdmin - Angular Admin Dashboard Template'
+        title:'Alertes | DevoSupport'
       },
       {
         path:'avatars',
         component:AvatarElementComponent,
-        title:'Angular Avatars Dashboard | TailAdmin - Angular Admin Dashboard Template'
+        title:'Avatars | DevoSupport'
       },
       {
         path:'badge',
         component:BadgesComponent,
-        title:'Angular Badges Dashboard | TailAdmin - Angular Admin Dashboard Template'
+        title:'Badges | DevoSupport'
       },
       {
         path:'buttons',
         component:ButtonsComponent,
-        title:'Angular Buttons Dashboard | TailAdmin - Angular Admin Dashboard Template'
+        title:'Boutons | DevoSupport'
       },
       {
         path:'images',
         component:ImagesComponent,
-        title:'Angular Images Dashboard | TailAdmin - Angular Admin Dashboard Template'
+        title:'Images | DevoSupport'
       },
       {
         path:'videos',
         component:VideosComponent,
-        title:'Angular Videos Dashboard | TailAdmin - Angular Admin Dashboard Template'
+        title:'Vidéos | DevoSupport'
       },
       {
         path:'user-management',
@@ -132,6 +137,30 @@ export const routes: Routes = [
         title:'Device Management | DevoSupport'
       },
       {
+        path:'device-management/:id',
+        component:DeviceDetailComponent,
+        canActivate: [ITGuard],
+        title:'Détails Appareil | DevoSupport'
+      },
+      {
+        path:'device-types',
+        component:DeviceTypesComponent,
+        canActivate: [ITGuard],
+        title:"Types d'appareils | DevoSupport"
+      },
+      {
+        path:'device-maintenance',
+        component:DeviceMaintenanceComponent,
+        canActivate: [ITGuard],
+        title:'Maintenance des appareils | DevoSupport'
+      },
+      {
+        path:'device-maintenance/:id',
+        component:DeviceMaintenanceDetailComponent,
+        canActivate: [ITGuard],
+        title:'Détails Maintenance | DevoSupport'
+      },
+      {
         path:'device-allocation',
         component:DeviceAllocationComponent,
         canActivate: [ITGuard],
@@ -149,6 +178,16 @@ export const routes: Routes = [
         title:'Mes tickets | DevoSupport'
       },
       {
+        path:'tickets/:id',
+        component:TicketDetailComponent,
+        title:'D\u00e9tails Ticket | DevoSupport'
+      },
+      {
+        path:'my-tickets/:id',
+        component:TicketDetailComponent,
+        title:'D\u00e9tails Ticket | DevoSupport'
+      },
+      {
         path:'chat',
         component:ChatComponent,
         title:'Chat | DevoSupport'
@@ -158,13 +197,23 @@ export const routes: Routes = [
         component:ConsultantDevicesComponent,
         title:'Consultant Devices | DevoSupport'
       },
+      {
+        path:'user-management/:id',
+        component:UserDetailComponent,
+        title:'Détails Utilisateur | DevoSupport'
+      },
+      {
+        path:'archived-users/:id',
+        component:UserDetailComponent,
+        title:'Détails Utilisateur Archivé | DevoSupport'
+      },
     ]
   },
   // auth pages
   {
     path:'signin',
     component:SignInComponent,
-    title:'Angular Sign In Dashboard | TailAdmin - Angular Admin Dashboard Template'
+    title:'Connexion | DevoSupport'
   },
   {
     path:'auth/callback',
@@ -175,6 +224,6 @@ export const routes: Routes = [
   {
     path:'**',
     component:NotFoundComponent,
-    title:'Angular NotFound Dashboard | TailAdmin - Angular Admin Dashboard Template'
+    title:'Page introuvable | DevoSupport'
   },
 ];

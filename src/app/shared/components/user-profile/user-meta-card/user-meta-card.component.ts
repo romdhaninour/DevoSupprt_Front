@@ -11,24 +11,23 @@ export class UserMetaCardComponent {
   @Input() user: any = {};
 
   get displayName() {
-    return `${this.user.prenom || ''} ${this.user.nom || ''}`.trim() || 'User';
+    return `${(this.user.prenom || '').trim()} ${(this.user.nom || '').trim()}`.trim() || 'User';
   }
 
   get avatar() {
-    const storedProfilePicture = typeof window !== 'undefined'
-      ? localStorage.getItem('user_profile_picture') || ''
-      : '';
-    const userId = typeof window !== 'undefined'
+    const userId = this.user._id || (typeof window !== 'undefined'
       ? localStorage.getItem('user_id') || ''
-      : '';
+      : '');
 
-    // Use backend proxy if we have a userId and profile picture URL
-    if (userId && (this.user.profilePicture || storedProfilePicture)) {
-      const proxyUrl = `http://localhost:3000/users/${userId}/profile-picture`;
-      return proxyUrl;
+    const profilePicture = this.user.profilePicture ||
+      (typeof window !== 'undefined'
+        ? localStorage.getItem('user_profile_picture') || ''
+        : '');
+
+    if (userId && profilePicture) {
+      return `http://localhost:3000/users/${userId}/profile-picture`;
     }
 
-    // Return empty string to trigger initials fallback
     return '';
   }
 

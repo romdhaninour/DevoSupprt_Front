@@ -9,22 +9,28 @@ import { firstValueFrom } from 'rxjs';
 import { IssueType, TicketPriority } from '../../models/ticket.model';
 
 type DeviceStatus = 'available' | 'assigned' | 'maintenance' | 'retired';
-type DeviceType = 'Laptop' | 'Desktop' | 'Mobile' | 'Tablet' | 'Printer' | 'Scanner' | 'Monitor' | 'Router' | 'Switch' | 'Access Point' | 'Camera' | 'Projecteur';
 
 interface Device {
   id: string;
   name: string;
-  type: DeviceType;
-  department: string;
+  type: string;
   owner: string;
   email: string;
   status: DeviceStatus;
-  location: string;
   serialNumber: string;
-  purchaseDate: string;
+  department?: string;
+  location?: string;
+  purchaseDate?: string;
   assignedTo?: string | null;
   assignedAt?: string | null;
   assignedBy?: string | null;
+  maintenanceEnabled?: boolean;
+  maintenanceDescription?: string;
+  maintenanceStartDate?: string | null;
+  maintenanceEndDate?: string | null;
+  maintenanceFrequency?: string | null;
+  lastMaintenanceDate?: string | null;
+  nextMaintenanceDate?: string | null;
 }
 
 @Component({
@@ -48,7 +54,8 @@ export class DeviceManagementComponent implements OnInit {
 
   searchTerm = signal('');
   statusFilter = signal<'all' | DeviceStatus>('all');
-  typeFilter = signal<'all' | DeviceType>('all');
+  typeFilter = signal<'all' | string>('all');
+  deviceTypes = signal<string[]>([]);
   isIT = signal(localStorage.getItem('user_role') === 'IT' || localStorage.getItem('user_role') === 'ADMIN');
   showAddForm = signal(false);
   editingDeviceId = signal<string | null>(null);
@@ -61,6 +68,28 @@ export class DeviceManagementComponent implements OnInit {
   allocateLoading = signal(false);
   openActionMenuId = signal<string | null>(null);
   actionMenuPosition = signal<{top: number, left: number} | null>(null);
+  sortOrder = signal<'desc' | 'asc'>('desc');
+
+  filteredDevices = computed(() => {
+    const search = this.searchTerm().toLowerCase();
+    const status = this.statusFilter();
+    const type = this.typeFilter();
+    return this.devices().filter(d => {
+      const matchesSearch = !search || d.name.toLowerCase().includes(search);
+      const matchesStatus = status === 'all' || d.status === status;
+      const matchesType = type === 'all' || d.type === type;
+      return matchesSearch && matchesStatus && matchesType;
+    });
+  });
+
+  openDatePicker(input: HTMLInputElement | null) {
+    if (!input) { return; }
+    if (typeof input.showPicker === 'function') {
+      input.showPicker();
+    } else {
+      input.focus();
+    }
+  }
 
   // Ticket creation modal state
   showTicketModal = signal(false);
@@ -77,18 +106,21 @@ export class DeviceManagementComponent implements OnInit {
   formDevice = signal<Partial<Device>>({
     name: '',
     type: 'Laptop',
-    department: '',
     owner: '',
     email: '',
     status: 'available',
-    location: '',
     serialNumber: '',
-    purchaseDate: ''
+    maintenanceEnabled: false,
+    maintenanceDescription: '',
+    maintenanceStartDate: null,
+    maintenanceEndDate: null,
+    maintenanceFrequency: null,
   });
 
   ngOnInit() {
     this.loadDevices();
     this.loadConsultants();
+    this.loadDeviceTypes();
   }
 
   onFilterChange() {
@@ -96,39 +128,35 @@ export class DeviceManagementComponent implements OnInit {
     this.loadDevices();
   }
 
-  openDatePicker(el: HTMLInputElement | null) {
-    if (!el) return;
-    // Modern browsers (Chromium) support showPicker()
-    try {
-      if (typeof (el as any).showPicker === 'function') {
-        (el as any).showPicker();
-        return;
-      }
-    } catch (e) {
-      // ignore
-    }
-    el.focus();
+  toggleSortOrder() {
+    this.sortOrder.set(this.sortOrder() === 'desc' ? 'asc' : 'desc');
+    this.currentPage.set(1);
+    this.loadDevices();
   }
 
   loadDevices() {
     this.loading.set(true);
     this.error.set(null);
-    this.apiService.getDevices(this.currentPage(), this.itemsPerPage, this.searchTerm()).subscribe({
+    this.apiService.getDevices(this.currentPage(), this.itemsPerPage, this.searchTerm(), this.statusFilter(), this.typeFilter(), this.sortOrder()).subscribe({
       next: (data: any) => {
         this.devices.set(data.devices.map((device: any) => ({
           id: device._id ? String(device._id) : String(device.id ?? Date.now()),
           name: device.name,
           type: device.type,
-          department: device.department,
           owner: device.owner,
           email: device.email || '',
           status: device.status,
-          location: device.location,
           serialNumber: device.serialNumber,
-          purchaseDate: device.purchaseDate || '',
           assignedTo: device.assignedTo || null,
           assignedAt: device.assignedAt || null,
           assignedBy: device.assignedBy || null,
+          maintenanceEnabled: device.maintenanceEnabled || false,
+          maintenanceDescription: device.maintenanceDescription || '',
+          maintenanceStartDate: device.maintenanceStartDate || null,
+          maintenanceEndDate: device.maintenanceEndDate || null,
+          maintenanceFrequency: device.maintenanceFrequency || null,
+          lastMaintenanceDate: device.lastMaintenanceDate || null,
+          nextMaintenanceDate: device.nextMaintenanceDate || null,
         })));
         this.total.set(data.total);
         this.loading.set(false);
@@ -144,6 +172,13 @@ export class DeviceManagementComponent implements OnInit {
     this.apiService.getConsultants().subscribe({
       next: (users) => this.consultants.set(users),
       error: () => this.consultants.set([]),
+    });
+  }
+
+  loadDeviceTypes() {
+    this.apiService.getDeviceTypes().subscribe({
+      next: (types) => this.deviceTypes.set(types.map((t: any) => t.name)),
+      error: () => {}
     });
   }
 
@@ -201,7 +236,10 @@ export class DeviceManagementComponent implements OnInit {
     } else {
       this.openActionMenuId.set(deviceId);
       const rect = (event.target as HTMLElement).getBoundingClientRect();
-      this.actionMenuPosition.set({ top: rect.bottom + 5, left: rect.left });
+      const menuWidth = 180;
+      const padding = 8;
+      const left = Math.min(Math.max(rect.left, padding), window.innerWidth - menuWidth - padding);
+      this.actionMenuPosition.set({ top: rect.bottom + 5, left });
     }
   }
 
@@ -213,22 +251,6 @@ export class DeviceManagementComponent implements OnInit {
   hasNoValue(value: string | undefined | null): boolean {
     return !value || !value.trim();
   }
-
-  filteredDevices = computed(() => {
-    const term = this.searchTerm().toLowerCase();
-    const status = this.statusFilter();
-    const type = this.typeFilter();
-
-    return this.devices().filter((device) => {
-      const matchesSearch = !term || [device.name, device.owner, device.email, device.department, device.location, device.serialNumber]
-        .join(' ')
-        .toLowerCase()
-        .includes(term);
-      const matchesStatus = status === 'all' || device.status === status;
-      const matchesType = type === 'all' || device.type === type;
-      return matchesSearch && matchesStatus && matchesType;
-    });
-  });
 
   getStatusClass(status: DeviceStatus): string {
     switch (status) {
@@ -266,13 +288,15 @@ export class DeviceManagementComponent implements OnInit {
     this.formDevice.set({
       name: '',
       type: 'Laptop',
-      department: '',
       owner: '',
       email: '',
       status: 'available',
-      location: '',
       serialNumber: '',
-      purchaseDate: ''
+      maintenanceEnabled: false,
+      maintenanceDescription: '',
+      maintenanceStartDate: null,
+      maintenanceEndDate: null,
+      maintenanceFrequency: null,
     });
     this.showAddForm.set(true);
   }
@@ -286,7 +310,6 @@ export class DeviceManagementComponent implements OnInit {
     this.showAddForm.set(true);
   }
 
-
   async saveDevice() {
     const device = this.formDevice();
     if (!device.name) {
@@ -296,16 +319,18 @@ export class DeviceManagementComponent implements OnInit {
     this.loading.set(true);
     this.error.set(null);
 
-    const payload = {
+    const payload: any = {
       name: device.name!,
-      type: device.type as DeviceType,
-      department: device.department || 'Non spécifié',
+      type: device.type as string,
       owner: device.owner || 'À définir',
       email: device.email || '',
       status: device.status as DeviceStatus,
-      location: device.location || 'À définir',
       serialNumber: device.serialNumber || `AUTO-${Date.now()}`,
-      purchaseDate: device.purchaseDate || ''
+      maintenanceEnabled: device.maintenanceEnabled || false,
+      maintenanceDescription: device.maintenanceDescription || '',
+      maintenanceStartDate: device.maintenanceStartDate || null,
+      maintenanceEndDate: device.maintenanceEndDate || null,
+      maintenanceFrequency: device.maintenanceFrequency || null,
     };
 
     try {
@@ -325,13 +350,15 @@ export class DeviceManagementComponent implements OnInit {
       this.formDevice.set({
         name: '',
         type: 'Laptop',
-        department: '',
         owner: '',
         email: '',
         status: 'available',
-        location: '',
         serialNumber: '',
-        purchaseDate: ''
+        maintenanceEnabled: false,
+        maintenanceDescription: '',
+        maintenanceStartDate: null,
+        maintenanceEndDate: null,
+        maintenanceFrequency: null,
       });
     } catch (err: any) {
       this.error.set(err?.message || 'Impossible de sauvegarder l’appareil.');
@@ -375,7 +402,7 @@ export class DeviceManagementComponent implements OnInit {
     this.error.set(null);
     this.apiService.updateDeviceStatus(deviceId, nextStatus).subscribe({
       next: () => this.loadDevices(),
-      error: () => this.error.set('Impossible de mettre à jour le statut de l’appareil.')
+      error: () => this.error.set("Impossible de mettre à jour le statut de l'appareil.")
     });
   }
 

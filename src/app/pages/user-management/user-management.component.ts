@@ -1,7 +1,7 @@
 import { Component, OnInit, signal, HostListener, ElementRef, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterModule } from '@angular/router';
+import { RouterModule, Router } from '@angular/router';
 import { ApiService } from '../../services/api.service';
 import { User } from '../../models/user.model';
 import { ModalComponent } from '../../shared/components/ui/modal/modal.component';
@@ -52,6 +52,7 @@ export class UserManagementComponent implements OnInit {
   importingUsers = signal(false);
   importFeedback = signal<string | null>(null);
   importFeedbackType = signal<'success' | 'error' | null>(null);
+  sortOrder = signal<'desc' | 'asc'>('desc');
   
   // Pagination
   currentPage = 1;
@@ -191,11 +192,12 @@ export class UserManagementComponent implements OnInit {
   }
   
   archiveModalOpen = signal(false);
-  deleteModalOpen = signal(false);
   activationModalOpen = signal(false);
   deactivationModalOpen = signal(false);
   editModalOpen = signal(false);
   addUserModalOpen = signal(false);
+  deleteModalOpen = signal(false);
+  userToDelete = signal<any>(null);
   selectedUser = signal<User | null>(null);
   selectedRole = signal<string>('');
   openActionMenuId = signal<string | null>(null);
@@ -206,7 +208,7 @@ export class UserManagementComponent implements OnInit {
   newUserRole: 'ADMIN' | 'IT' | 'CONSULTANT' = 'IT';
   newUserError = signal<string | null>(null);
 
-  constructor(private apiService: ApiService) {}
+  constructor(private apiService: ApiService, private router: Router) {}
 
   ngOnInit() {
     this.loadUsers();
@@ -222,10 +224,15 @@ export class UserManagementComponent implements OnInit {
     }
   }
 
+  toggleSortOrder() {
+    this.sortOrder.set(this.sortOrder() === 'desc' ? 'asc' : 'desc');
+    this.loadUsers();
+  }
+
   loadUsers() {
     this.loading.set(true);
     this.error.set(null);
-    this.apiService.getUsers().subscribe({
+    this.apiService.getUsers(this.sortOrder()).subscribe({
       next: (data) => {
         this.users.set(data);
         this.loading.set(false);
@@ -283,6 +290,27 @@ export class UserManagementComponent implements OnInit {
     this.selectedUser.set(user);
     this.openActionMenuId.set(null);
     this.archiveModalOpen.set(true);
+  }
+
+  openDeleteModal(user: any) {
+    this.selectedUser.set(user);
+    this.deleteModalOpen.set(true);
+  }
+
+  confirmDelete() {
+    const user = this.selectedUser();
+    if (user) {
+      this.apiService.deleteUser(user._id).subscribe({
+        next: () => {
+          this.deleteModalOpen.set(false);
+          this.selectedUser.set(null);
+          this.loadUsers();
+        },
+        error: () => {
+          this.error.set('Failed to delete user');
+        }
+      });
+    }
   }
 
   resetNewUserForm() {
@@ -354,31 +382,13 @@ export class UserManagementComponent implements OnInit {
     }
   }
 
-  openDeleteModal(user: User) {
-    this.selectedUser.set(user);
-    this.deleteModalOpen.set(true);
-  }
-
-  confirmDelete() {
-    if (this.selectedUser()) {
-      this.apiService.deleteUser(this.selectedUser()!._id).subscribe({
-        next: () => {
-          this.loadUsers();
-          this.deleteModalOpen.set(false);
-          this.selectedUser.set(null);
-        },
-        error: (err) => this.error.set('Failed to delete user')
-      });
-    }
-  }
-
   closeModals() {
     this.addUserModalOpen.set(false);
     this.archiveModalOpen.set(false);
-    this.deleteModalOpen.set(false);
     this.activationModalOpen.set(false);
     this.deactivationModalOpen.set(false);
     this.editModalOpen.set(false);
+    this.deleteModalOpen.set(false);
     this.selectedUser.set(null);
     this.selectedRole.set('');
     this.openActionMenuId.set(null);
@@ -469,9 +479,7 @@ export class UserManagementComponent implements OnInit {
 
   getProfilePictureUrl(user: User): string {
     if (user.profilePicture && user.profilePicture !== '') {
-      const proxyUrl = `http://localhost:3000/users/${user._id}/profile-picture`;
-      console.log('UserManagementComponent.getProfilePictureUrl - using backend proxy:', proxyUrl);
-      return proxyUrl;
+      return `http://localhost:3000/users/${user._id}/profile-picture`;
     }
     return '';
   }
@@ -518,5 +526,9 @@ export class UserManagementComponent implements OnInit {
         this.error.set('Impossible d\'exporter la liste des utilisateurs.');
       },
     });
+  }
+
+  navigateToUser(userId: string) {
+    this.router.navigate(['/user-management', userId]);
   }
 }

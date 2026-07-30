@@ -1,0 +1,395 @@
+<div class="space-y-6">
+  <!-- Header -->
+  <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-1">Maintenance des appareils</h1>
+      <p class="text-gray-600 dark:text-gray-400 text-sm">Suivi et gestion de la maintenance périodique des équipements</p>
+    </div>
+    <div class="flex flex-wrap items-center gap-3">
+      <div class="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-300">
+        {{ totalDevices }} appareil(s)
+      </div>
+    </div>
+  </div>
+
+  <!-- Error -->
+  <div *ngIf="error()" class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-950/20 dark:text-red-300">
+    {{ error() }}
+  </div>
+
+  <!-- Stats Cards -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-5 animate-fade-in">
+    <div class="relative bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+      <div class="absolute left-0 top-0 bottom-0 w-1 bg-slate-500"></div>
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Total en maintenance</p>
+          <p class="text-3xl font-bold text-gray-900 dark:text-white">{{ totalDevices }}</p>
+        </div>
+      </div>
+    </div>
+    <div class="relative bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+      <div class="absolute left-0 top-0 bottom-0 w-1 bg-rose-500"></div>
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">En retard</p>
+          <p class="text-3xl font-bold text-rose-600 dark:text-rose-400">{{ overdueCount }}</p>
+        </div>
+      </div>
+    </div>
+    <div class="relative bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+      <div class="absolute left-0 top-0 bottom-0 w-1 bg-emerald-500"></div>
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">À venir</p>
+          <p class="text-3xl font-bold text-emerald-600 dark:text-emerald-400">{{ upcomingCount }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Search Bar -->
+  <div class="bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-sm border border-gray-100 dark:border-gray-700 animate-fade-in" style="animation-delay: 100ms;">
+    <div class="flex flex-col lg:flex-row gap-4">
+      <div class="relative flex-1">
+        <span class="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none">
+          <svg class="w-5 h-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" clip-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" />
+          </svg>
+        </span>
+        <input
+          type="text"
+          [ngModel]="searchTerm()"
+          (ngModelChange)="updateSearchTerm($event)"
+          placeholder="Rechercher par nom, type, numéro de série..."
+          class="w-full pl-12 pr-4 py-3.5 rounded-xl border-2 border-gray-200 bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 dark:bg-gray-900 dark:border-gray-700 dark:text-white dark:placeholder:text-gray-500 transition-all duration-200"
+        />
+        <span *ngIf="searchTerm()" class="absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer" (click)="updateSearchTerm('')">
+          <svg class="w-5 h-5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" clip-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 01-1.414-1.414z" />
+          </svg>
+        </span>
+      </div>
+      <div class="flex flex-wrap gap-3">
+        <div class="relative min-w-[180px]">
+          <select [ngModel]="filterFrequency()" (ngModelChange)="updateFrequencyFilter($event)"
+            class="w-full pl-4 pr-10 py-3.5 rounded-xl border border-gray-200 bg-gray-50 text-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300 appearance-none cursor-pointer transition-all duration-200">
+            <option value="all">Toutes les périodes</option>
+            <option value="1month">1 mois</option>
+            <option value="3months">3 mois</option>
+            <option value="6months">6 mois</option>
+            <option value="9months">9 mois</option>
+            <option value="1year">1 an</option>
+          </select>
+          <span class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+            <svg class="w-4 h-4 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" clip-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" />
+            </svg>
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden animate-fade-in" style="animation-delay: 200ms;">
+    <div *ngIf="loading()" class="flex justify-center items-center h-64">
+      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+    </div>
+
+    <div *ngIf="!loading()" class="overflow-hidden">
+      <!-- Desktop Table View -->
+      <div class="hidden lg:block overflow-x-auto">
+        <table class="min-w-full">
+          <thead class="bg-gray-50 dark:bg-gray-900/50">
+            <tr>
+              <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Appareil</th>
+              <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Description</th>
+              <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Fréquence</th>
+              <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Échéance</th>
+              <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Délai</th>
+              <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
+            </tr>
+          </thead>
+          <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-100 dark:divide-gray-700">
+            <tr *ngFor="let device of paginatedDevices" class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-all duration-200 cursor-pointer group" (click)="navigateToDetail(device.id)">
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm font-semibold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{{ device.name }}</div>
+                <div class="text-xs text-gray-500 dark:text-gray-400">{{ device.type }} · {{ device.serialNumber }}</div>
+              </td>
+              <td class="px-6 py-4">
+                <span *ngIf="device.maintenanceDescription" class="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">{{ device.maintenanceDescription }}</span>
+                <span *ngIf="!device.maintenanceDescription" class="text-sm text-gray-400">—</span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <span *ngIf="device.maintenanceFrequency" class="text-sm text-gray-600 dark:text-gray-400">{{ getFrequencyLabel(device.maintenanceFrequency) }}</span>
+                <span *ngIf="!device.maintenanceFrequency" class="text-sm text-gray-400">—</span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm text-gray-600 dark:text-gray-400">{{ formatDate(device.nextMaintenanceDate || device.maintenanceEndDate) }}</div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <span [ngClass]="['px-3 py-1.5 inline-flex text-xs font-semibold rounded-full border', getMaintenanceStatusClass(getMaintenanceStatus(device))]">
+                  {{ getMaintenanceStatus(device) }}
+                </span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                <div class="relative inline-flex items-center gap-2 action-menu-container">
+                  <button type="button" (click)="toggleActionMenu(device.id, $event); $event.stopPropagation()"
+                    class="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-gray-200 text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white transition-all duration-200">
+                    <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                      <circle cx="3" cy="10" r="2" />
+                      <circle cx="10" cy="10" r="2" />
+                      <circle cx="17" cy="10" r="2" />
+                    </svg>
+                  </button>
+                  <div *ngIf="openActionMenuId() === device.id" class="fixed z-50 flex min-w-[180px] flex-col gap-1 rounded-xl border border-gray-200 bg-white p-2 shadow-xl dark:border-gray-700 dark:bg-gray-800 backdrop-blur-sm" [style.top.px]="actionMenuPosition()?.top" [style.left.px]="actionMenuPosition()?.left" style="max-height: calc(100vh - 40px); overflow-y: auto;">
+                    <button (click)="openEditModal(device); $event.stopPropagation()"
+                      class="w-full rounded-lg px-3 py-2 text-left text-xs font-medium text-gray-600 hover:bg-blue-50 hover:text-blue-600 dark:text-gray-400 dark:hover:bg-blue-900/30 dark:hover:text-blue-400 transition-all duration-200">
+                      Modifier
+                    </button>
+                    <button (click)="openConfirmModal(device); $event.stopPropagation()"
+                      class="w-full rounded-lg px-3 py-2 text-left text-xs font-medium text-gray-600 hover:bg-green-50 hover:text-green-600 dark:text-gray-400 dark:hover:bg-green-900/30 dark:hover:text-green-400 transition-all duration-200">
+                      Effectué
+                    </button>
+                  </div>
+                </div>
+              </td>
+            </tr>
+            <tr *ngIf="paginatedDevices.length === 0">
+              <td colspan="6" class="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
+                <div class="flex flex-col items-center">
+                  <svg class="w-16 h-16 text-gray-300 dark:text-gray-600 mb-4" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                  </svg>
+                  <p class="text-lg font-medium">{{ searchTerm() ? 'Aucun appareil trouvé' : 'Aucun appareil à maintenir' }}</p>
+                  <p class="text-sm">{{ searchTerm() ? 'Essayez d\'ajuster votre recherche' : 'Configurez la maintenance sur les appareils depuis la page d\'inventaire' }}</p>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination Controls (Desktop) -->
+      <div *ngIf="filteredDevices().length > 0" class="px-6 py-5 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/30">
+        <div class="flex items-center justify-between w-full">
+          <div class="text-sm text-gray-600 dark:text-gray-400">
+            Affichage de {{ getPaginatedRange() }} appareil(s)
+          </div>
+          <div class="flex items-center gap-2">
+            <button
+              (click)="goToPage(currentPage - 1)"
+              [disabled]="currentPage === 1"
+              class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm transition-all duration-200 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700"
+            >
+              <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" clip-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" />
+              </svg>
+              <span class="hidden sm:inline">Précédent</span>
+            </button>
+            <ul class="hidden items-center gap-1 sm:flex">
+              <li *ngFor="let page of pageNumbers()">
+                <button
+                  (click)="goToPage(page)"
+                  class="flex h-10 w-10 items-center justify-center rounded-lg text-sm font-medium transition-all duration-200"
+                  [ngClass]="{
+                    'bg-blue-600 text-white shadow-md shadow-blue-500/30': currentPage === page,
+                    'text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700': currentPage !== page
+                  }"
+                >
+                  {{ page }}
+                </button>
+              </li>
+            </ul>
+            <button
+              (click)="goToPage(currentPage + 1)"
+              [disabled]="currentPage === totalPages"
+              class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm transition-all duration-200 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700"
+            >
+              <span class="hidden sm:inline">Suivant</span>
+              <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" clip-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mobile Card View -->
+      <div class="lg:hidden space-y-4 p-4">
+        <div *ngFor="let device of paginatedDevices" class="bg-gray-50 dark:bg-gray-700/50 rounded-2xl p-5 border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow duration-200 cursor-pointer" (click)="navigateToDetail(device.id)">
+          <div class="mb-4">
+            <div class="flex items-start justify-between mb-3">
+              <div>
+                <h3 class="text-base font-semibold text-gray-900 dark:text-white">{{ device.name }}</h3>
+                <p class="text-sm text-gray-500 dark:text-gray-400">{{ device.type }} · {{ device.serialNumber }}</p>
+              </div>
+              <span [ngClass]="['px-3 py-1.5 inline-flex text-xs font-semibold rounded-full border flex-shrink-0', getMaintenanceStatusClass(getMaintenanceStatus(device))]">
+                {{ getMaintenanceStatus(device) }}
+              </span>
+            </div>
+            <p *ngIf="device.maintenanceDescription" class="text-sm text-gray-600 dark:text-gray-400 mb-2 line-clamp-2">{{ device.maintenanceDescription }}</p>
+          </div>
+          <div class="flex items-center justify-between mb-4 text-xs text-gray-600 dark:text-gray-400">
+            <span>{{ getFrequencyLabel(device.maintenanceFrequency) }}</span>
+            <span>{{ formatDate(device.nextMaintenanceDate || device.maintenanceEndDate) }}</span>
+          </div>
+          <div class="flex flex-wrap gap-2 action-menu-container">
+            <button type="button" (click)="toggleActionMenu(device.id, $event); $event.stopPropagation()"
+              class="inline-flex items-center rounded-xl border border-gray-200 px-4 py-2.5 text-xs font-medium text-gray-600 hover:bg-gray-100 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700 transition-all duration-200">
+              <svg class="h-4 w-4 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                <circle cx="3" cy="10" r="2" />
+                <circle cx="10" cy="10" r="2" />
+                <circle cx="17" cy="10" r="2" />
+              </svg>
+              Actions
+            </button>
+            <div *ngIf="openActionMenuId() === device.id" class="flex min-w-[180px] flex-col gap-1 rounded-xl border border-gray-200 bg-white p-2 shadow-xl dark:border-gray-700 dark:bg-gray-800 backdrop-blur-sm">
+              <button (click)="openEditModal(device); $event.stopPropagation()"
+                class="w-full rounded-lg px-3 py-2 text-left text-xs font-medium text-gray-600 hover:bg-blue-50 hover:text-blue-600 dark:text-gray-400 dark:hover:bg-blue-900/30 dark:hover:text-blue-400 transition-all duration-200">
+                Modifier
+              </button>
+              <button (click)="openConfirmModal(device); $event.stopPropagation()"
+                class="w-full rounded-lg px-3 py-2 text-left text-xs font-medium text-gray-600 hover:bg-green-50 hover:text-green-600 dark:text-gray-400 dark:hover:bg-green-900/30 dark:hover:text-green-400 transition-all duration-200">
+                Effectué
+              </button>
+            </div>
+          </div>
+        </div>
+        <div *ngIf="paginatedDevices.length === 0" class="text-center text-gray-500 dark:text-gray-400 py-12">
+          <div class="flex flex-col items-center">
+            <svg class="w-16 h-16 text-gray-300 dark:text-gray-600 mb-4" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+            </svg>
+            <p class="text-lg font-medium">{{ searchTerm() ? 'Aucun appareil trouvé' : 'Aucun appareil à maintenir' }}</p>
+            <p class="text-sm">{{ searchTerm() ? 'Essayez d\'ajuster votre recherche' : 'Configurez la maintenance sur les appareils depuis la page d\'inventaire' }}</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mobile Pagination -->
+      <div *ngIf="filteredDevices().length > 0" class="lg:hidden px-4 py-5 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/30">
+        <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div class="text-sm text-gray-600 dark:text-gray-400 text-center sm:text-left">
+            Page {{ currentPage }} sur {{ totalPages }}
+          </div>
+          <div class="flex items-center gap-2">
+            <button
+              (click)="goToPage(currentPage - 1)"
+              [disabled]="currentPage === 1"
+              class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm transition-all duration-200 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700"
+            >
+              <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" clip-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" />
+              </svg>
+              Précédent
+            </button>
+            <button
+              (click)="goToPage(currentPage + 1)"
+              [disabled]="currentPage === totalPages"
+              class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm transition-all duration-200 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700"
+            >
+              Suivant
+              <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" clip-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Modal -->
+<app-modal [isOpen]="showEditModal()" (close)="closeEditModal()" className="max-w-lg mx-4">
+  <div class="p-6">
+    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-1">Modifier la maintenance</h3>
+    <p *ngIf="editingDevice() as d" class="text-sm text-gray-500 dark:text-gray-400 mb-4">{{ d.name }} — {{ d.serialNumber }}</p>
+
+    <div *ngIf="editError()" class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-950/20 dark:text-red-300 mb-4">
+      {{ editError() }}
+    </div>
+
+    <div class="grid gap-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Description</label>
+        <textarea
+          [formField]="editForm.description"
+          rows="3"
+          class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+          placeholder="Décrire la maintenance à effectuer..."
+        ></textarea>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Fréquence</label>
+        <select [formField]="editForm.frequency"
+          class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white">
+          <option value="">Non défini</option>
+          <option value="1month">1 mois</option>
+          <option value="3months">3 mois</option>
+          <option value="6months">6 mois</option>
+          <option value="9months">9 mois</option>
+          <option value="1year">1 an</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Date de fin</label>
+        <div class="relative">
+          <div class="absolute inset-y-0 start-0 flex items-center ps-3 pointer-events-none">
+            <svg class="w-4 h-4 text-gray-500 dark:text-gray-400" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 10h16m-8-3V4M7 7V4m10 3V4M5 20h14a1 1 0 0 0 1-1V7a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1Zm3-7h.01v.01H8V13Zm4 0h.01v.01H12V13Zm4 0h.01v.01H16V13Zm-8 4h.01v.01H8V17Zm4 0h.01v.01H12V17Zm4 0h.01v.01H16V17Z"/></svg>
+          </div>
+          <input id="listEditEndDateInput" type="text" [formField]="editForm.endDate"
+            class="block w-full ps-9 pe-3 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white text-sm rounded-xl focus:ring-blue-500 focus:border-blue-500 shadow-sm placeholder:text-gray-400"
+            placeholder="Sélectionner une date" />
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-6 flex justify-end gap-2">
+      <button type="button" (click)="closeEditModal()"
+        class="px-4 py-2 rounded-xl border border-gray-200 bg-white text-sm font-semibold text-gray-700 hover:bg-gray-100 transition-colors dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700">
+        Annuler
+      </button>
+      <button type="button" (click)="saveEdit()" [disabled]="editLoading()"
+        class="px-4 py-2 rounded-xl bg-blue-600 text-sm font-semibold text-white hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+        {{ editLoading() ? 'Enregistrement...' : 'Enregistrer' }}
+      </button>
+    </div>
+  </div>
+</app-modal>
+
+<!-- Confirm Mark As Maintained Modal -->
+<app-modal [isOpen]="showConfirmModal()" (close)="closeConfirmModal()" className="max-w-md mx-4">
+  <div class="p-6">
+    <div class="flex items-center justify-center w-12 h-12 mx-auto mb-4 rounded-full bg-green-100 dark:bg-green-900/30">
+      <svg class="w-6 h-6 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+      </svg>
+    </div>
+    <h3 class="text-lg font-semibold text-gray-900 dark:text-white text-center mb-2">Marquer comme effectué</h3>
+    <p *ngIf="confirmingDevice() as d" class="text-sm text-gray-500 dark:text-gray-400 text-center mb-1">
+      Appareil : <span class="font-medium text-gray-700 dark:text-gray-300">{{ d.name }}</span>
+    </p>
+    <p *ngIf="confirmingDevice() as d" class="text-sm text-gray-500 dark:text-gray-400 text-center mb-4">
+      N° série : <span class="font-medium text-gray-700 dark:text-gray-300">{{ d.serialNumber }}</span>
+    </p>
+    <div class="rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 p-4 mb-6">
+      <p class="text-sm text-amber-700 dark:text-amber-300">
+        La maintenance sera enregistrée à ce jour. Les prochaines dates seront automatiquement recalculées selon la fréquence
+        <span *ngIf="confirmingDevice()?.maintenanceFrequency" class="font-semibold">({{ getFrequencyLabel(confirmingDevice()?.maintenanceFrequency) }})</span>.
+      </p>
+    </div>
+    <div class="flex justify-end gap-2">
+      <button type="button" (click)="closeConfirmModal()"
+        class="px-4 py-2 rounded-xl border border-gray-200 bg-white text-sm font-semibold text-gray-700 hover:bg-gray-100 transition-colors dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700">
+        Annuler
+      </button>
+      <button type="button" (click)="confirmMarkAsMaintained()" [disabled]="confirmLoading()"
+        class="px-4 py-2 rounded-xl bg-green-600 text-sm font-semibold text-white hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+        {{ confirmLoading() ? 'Enregistrement...' : 'Confirmer' }}
+      </button>
+    </div>
+  </div>
+</app-modal>
