@@ -16,7 +16,6 @@ import { ButtonsComponent } from './pages/ui-elements/buttons/buttons.component'
 import { ImagesComponent } from './pages/ui-elements/images/images.component';
 import { VideosComponent } from './pages/ui-elements/videos/videos.component';
 import { SignInComponent } from './pages/auth-pages/sign-in/sign-in.component';
-import { CalenderComponent } from './pages/calender/calender.component';
 import { UserManagementComponent } from './pages/user-management/user-management.component';
 import { ArchivedUsersComponent } from './pages/archived-users/archived-users.component';
 import { DeviceManagementComponent } from './pages/device-management/device-management.component';
@@ -46,11 +45,6 @@ export const routes: Routes = [
         component: EcommerceComponent,
         pathMatch: 'full',
         title: 'Tableau de bord | DevoSupport',
-      },
-      {
-        path:'calendar',
-        component:CalenderComponent,
-        title:'Calendrier | DevoSupport'
       },
       {
         path:'profile',
