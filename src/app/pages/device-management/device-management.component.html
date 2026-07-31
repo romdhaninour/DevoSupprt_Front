@@ -372,7 +372,7 @@
 <!-- Add/Edit Device Modal -->
 <app-modal [isOpen]="showAddForm()" (close)="cancelForm()" className="max-w-2xl mx-4">
   <form #deviceForm="ngForm" (ngSubmit)="saveDevice()" novalidate class="p-6">
-    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">{{ editingDeviceId() ? "Modifier l\u2019appareil" : "Ajouter un nouvel appareil" }}</h3>
+    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">{{ editingDeviceId() ? "Modifier l'appareil" : "Ajouter un nouvel appareil" }}</h3>
     <div class="grid gap-4 md:grid-cols-2">
       <div>
         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Nom</label>
