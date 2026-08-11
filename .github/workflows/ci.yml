@@ -24,6 +24,5 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Run tests (non-blocking)
-        run: npx ng test --watch=false --no-progress
-        continue-on-error: true
+      - name: Run tests
+        run: npx ng test --watch=false --browsers=ChromeHeadlessNoSandbox --no-progress

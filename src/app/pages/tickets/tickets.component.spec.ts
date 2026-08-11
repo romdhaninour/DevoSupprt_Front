@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { of, throwError } from 'rxjs';
 import { TicketsComponent } from './tickets.component';
 import { ApiService } from '../../services/api.service';
@@ -484,11 +484,11 @@ describe('TicketsComponent', () => {
   });
 
   describe('openTicketDetail', () => {
-    it('should open detail modal with selected ticket', () => {
+    it('should navigate to the ticket detail route', () => {
+      const router = TestBed.inject(Router);
+      const navigateSpy = spyOn(router, 'navigate');
       component.openTicketDetail(mockTicket);
-      expect(component.selectedTicket()).toEqual(mockTicket);
-      expect(component.showDetailModal()).toBe(true);
-      expect(component.newComment()).toBe('');
+      expect(navigateSpy).toHaveBeenCalledWith(['/tickets', mockTicket._id]);
     });
   });
 

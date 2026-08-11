@@ -144,17 +144,17 @@ describe('ProfileComponent', () => {
   describe('openEditModal', () => {
     it('should open edit modal', () => {
       component.openEditModal();
-      expect(component.isEditModalOpen).toBe(true);
+      expect(component.isEditModalOpen()).toBe(true);
     });
   });
 
   describe('closeEditModal', () => {
     it('should close edit modal and clear selectedProfilePicture', () => {
-      component.isEditModalOpen = true;
-      component.selectedProfilePicture = new File([''], 'test.jpg');
+      component.isEditModalOpen.set(true);
+      component.selectedProfilePicture.set(new File([''], 'test.jpg'));
       component.closeEditModal();
-      expect(component.isEditModalOpen).toBe(false);
-      expect(component.selectedProfilePicture).toBeNull();
+      expect(component.isEditModalOpen()).toBe(false);
+      expect(component.selectedProfilePicture()).toBeNull();
     });
   });
 
@@ -164,8 +164,8 @@ describe('ProfileComponent', () => {
         target: { files: [new File([''], 'test.jpg', { type: 'image/jpeg' })] }
       } as any;
       component.onProfilePictureSelected(event);
-      expect(component.selectedProfilePicture).toBeTruthy();
-      expect(component.imageError).toBe(false);
+      expect(component.selectedProfilePicture()).toBeTruthy();
+      expect(component.imageError()).toBe(false);
     });
 
     it('should set imageError for non-image file', () => {
@@ -173,8 +173,8 @@ describe('ProfileComponent', () => {
         target: { files: [new File([''], 'test.txt', { type: 'text/plain' })] }
       } as any;
       component.onProfilePictureSelected(event);
-      expect(component.selectedProfilePicture).toBeNull();
-      expect(component.imageError).toBe(true);
+      expect(component.selectedProfilePicture()).toBeNull();
+      expect(component.imageError()).toBe(true);
     });
 
     it('should handle event with no files', () => {
@@ -182,7 +182,7 @@ describe('ProfileComponent', () => {
         target: { files: null }
       } as any;
       component.onProfilePictureSelected(event);
-      expect(component.selectedProfilePicture).toBeNull();
+      expect(component.selectedProfilePicture()).toBeNull();
     });
   });
 
@@ -240,7 +240,7 @@ describe('ProfileComponent', () => {
 
       component.saveProfile();
 
-      expect(component.saving).toBe(false);
+      expect(component.saving()).toBe(false);
       expect(window.alert).toHaveBeenCalled();
     });
 
@@ -257,9 +257,9 @@ describe('ProfileComponent', () => {
 
   describe('uploadProfilePicture', () => {
     it('should return early if no selectedProfilePicture', async () => {
-      component.selectedProfilePicture = null;
+      component.selectedProfilePicture.set(null);
       await component.uploadProfilePicture();
-      expect(component.uploadingProfilePicture).toBe(false);
+      expect(component.uploadingProfilePicture()).toBe(false);
     });
   });
 
