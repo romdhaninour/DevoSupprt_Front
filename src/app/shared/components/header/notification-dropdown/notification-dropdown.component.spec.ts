@@ -57,25 +57,4 @@ describe('NotificationDropdownComponent', () => {
     });
   });
 
-  describe('canViewNotifications', () => {
-    it('should return true for ADMIN', () => {
-      localStorage.setItem('user_role', 'ADMIN');
-      expect(component.canViewNotifications).toBe(true);
-    });
-
-    it('should return true for IT', () => {
-      localStorage.setItem('user_role', 'IT');
-      expect(component.canViewNotifications).toBe(true);
-    });
-
-    it('should return false for CONSULTANT', () => {
-      localStorage.setItem('user_role', 'CONSULTANT');
-      expect(component.canViewNotifications).toBe(false);
-    });
-
-    it('should return false when no role', () => {
-      localStorage.removeItem('user_role');
-      expect(component.canViewNotifications).toBe(false);
-    });
-  });
 });

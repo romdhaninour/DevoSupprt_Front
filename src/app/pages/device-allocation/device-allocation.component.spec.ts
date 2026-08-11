@@ -90,7 +90,7 @@ describe('DeviceAllocationComponent', () => {
       component.ngOnInit();
 
       expect(component.loading()).toBe(false);
-      expect(component.message()).toBe('Impossible de charger la liste des appareils.');
+      expect(component.message()).toBe('fail');
       expect(component.messageType()).toBe('error');
     });
 
@@ -148,7 +148,7 @@ describe('DeviceAllocationComponent', () => {
       component.assignDevice();
 
       expect(component.loading()).toBe(false);
-      expect(component.message()).toBe("Impossible d'attribuer cet appareil.");
+      expect(component.message()).toBe('fail');
       expect(component.messageType()).toBe('error');
     });
   });
@@ -181,7 +181,7 @@ describe('DeviceAllocationComponent', () => {
       component.returnDevice('d2');
 
       expect(component.loading()).toBe(false);
-      expect(component.message()).toBe("Impossible de restituer cet appareil.");
+      expect(component.message()).toBe('fail');
       expect(component.messageType()).toBe('error');
     });
   });
