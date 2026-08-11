@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { ChatService, ChatMessage, Conversation } from '../../services/chat.service';
 import { ApiService } from '../../services/api.service';
 import { User } from '../../models/user.model';
+import { environment } from '../../../environments/environment';
 import { firstValueFrom, Subscription } from 'rxjs';
 
 @Component({
@@ -460,11 +461,28 @@ export class ChatComponent implements OnInit, OnDestroy {
   }
 
   openLightbox(url: string) {
-    this.lightboxImage = url;
+    this.lightboxImage = this.resolveImageUrl(url);
   }
 
   closeLightbox() {
     this.lightboxImage = null;
+  }
+
+  resolveImageUrl(url?: string | null): string {
+    if (!url) return '';
+    if (url.startsWith('data:') || url.startsWith('blob:')) return url;
+    if (url.startsWith('/')) return environment.apiUrl + url;
+    try {
+      const parsed = new URL(url);
+      const apiHost = new URL(environment.apiUrl).host;
+      const isLocalHost = ['localhost', '0.0.0.0', '127.0.0.1'].includes(parsed.hostname);
+      if (isLocalHost || parsed.host === apiHost) {
+        return environment.apiUrl + parsed.pathname + parsed.search;
+      }
+      return url;
+    } catch {
+      return url;
+    }
   }
 
   onMessageInput(value: string) {
