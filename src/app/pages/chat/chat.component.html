@@ -183,7 +183,7 @@
                     : 'bg-white dark:bg-gray-700 text-slate-800 dark:text-white rounded-2xl rounded-bl-md border border-slate-200/60 dark:border-gray-600/60 shadow-lg shadow-slate-200/30 dark:shadow-black/20' }}">
                     
                     @if (msg.imageUrl) {
-                      <img [src]="msg.imageUrl" alt="Image partagée" class="rounded-xl max-w-full mb-1 cursor-pointer hover:opacity-90 transition-opacity" (click)="openLightbox(msg.imageUrl)" />
+                      <img [src]="resolveImageUrl(msg.imageUrl)" alt="Image partagée" class="rounded-xl max-w-full mb-1 cursor-pointer hover:opacity-90 transition-opacity" (click)="openLightbox(msg.imageUrl)" />
                     }
                     
                     @if (msg.message) {

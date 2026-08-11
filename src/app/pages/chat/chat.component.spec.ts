@@ -500,6 +500,40 @@ describe('ChatComponent', () => {
     });
   });
 
+  describe('resolveImageUrl', () => {
+    it('should return empty string for null/undefined', () => {
+      expect(component.resolveImageUrl(null)).toBe('');
+      expect(component.resolveImageUrl(undefined)).toBe('');
+    });
+
+    it('should pass through data: and blob: URLs', () => {
+      const dataUrl = 'data:image/jpeg;base64,xxx';
+      const blobUrl = 'blob:http://localhost:4200/abc';
+      expect(component.resolveImageUrl(dataUrl)).toBe(dataUrl);
+      expect(component.resolveImageUrl(blobUrl)).toBe(blobUrl);
+    });
+
+    it('should prefix relative URLs with the API base URL', () => {
+      expect(component.resolveImageUrl('/uploads/chats/img.jpg')).toBe(
+        'http://localhost:3000/uploads/chats/img.jpg'
+      );
+    });
+
+    it('should rewrite legacy localhost absolute URLs to the API host', () => {
+      expect(component.resolveImageUrl('http://localhost:3000/uploads/chats/img.jpg')).toBe(
+        'http://localhost:3000/uploads/chats/img.jpg'
+      );
+      expect(component.resolveImageUrl('http://0.0.0.0:3000/uploads/chats/img.jpg')).toBe(
+        'http://localhost:3000/uploads/chats/img.jpg'
+      );
+    });
+
+    it('should keep already-absolute external URLs unchanged', () => {
+      const url = 'https://example.com/uploads/img.jpg';
+      expect(component.resolveImageUrl(url)).toBe(url);
+    });
+  });
+
   describe('onSearchChange', () => {
     it('should set searchQuery', () => {
       component.onSearchChange('test query');
