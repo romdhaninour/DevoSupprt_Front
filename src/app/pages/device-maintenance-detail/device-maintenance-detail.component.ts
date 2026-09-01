@@ -36,6 +36,7 @@ export class DeviceMaintenanceDetailComponent implements OnInit {
   showEditModal = signal(false);
   editDescription = '';
   editEndDate = '';
+  editFrequency = '';
   editLoading = signal(false);
   editError = signal<string | null>(null);
 
@@ -85,6 +86,7 @@ export class DeviceMaintenanceDetailComponent implements OnInit {
     if (!d) return;
     this.editDescription = d.maintenanceDescription || '';
     this.editEndDate = d.maintenanceEndDate ? new Date(d.maintenanceEndDate).toISOString().split('T')[0] : '';
+    this.editFrequency = d.maintenanceFrequency || '';
     this.editError.set(null);
     this.showEditModal.set(true);
 
@@ -110,11 +112,41 @@ export class DeviceMaintenanceDetailComponent implements OnInit {
     this.editError.set(null);
   }
 
-  async saveEdit() {
-    if (!this.editEndDate) {
-      this.editError.set('La date de fin est obligatoire');
-      return;
+  onFrequencyChange(frequency: string) {
+    const d = this.device();
+    if (!frequency || !d) return;
+    const baseString = d.maintenanceStartDate || d.nextMaintenanceDate || d.maintenanceEndDate;
+    if (!baseString) return;
+    const baseDate = new Date(baseString);
+    const months = this.getFreqMonths(frequency);
+    if (months < 1) return;
+    baseDate.setMonth(baseDate.getMonth() + months);
+    this.editFrequency = frequency;
+    this.editEndDate = this.toDateString(baseDate);
+    if (this.editEndFlatpickr) {
+      this.editEndFlatpickr.setDate(this.editEndDate, true);
     }
+  }
+
+  private getFreqMonths(freq: string): number {
+    switch (freq) {
+      case '1month': return 1;
+      case '3months': return 3;
+      case '6months': return 6;
+      case '9months': return 9;
+      case '1year': return 12;
+      default: return 0;
+    }
+  }
+
+  private toDateString(date: Date): string {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }
+
+  async saveEdit() {
     const d = this.device();
     if (!d) return;
 
@@ -123,7 +155,8 @@ export class DeviceMaintenanceDetailComponent implements OnInit {
     try {
       await firstValueFrom(this.apiService.updateDeviceMaintenance(d._id || d.id, {
         maintenanceDescription: this.editDescription,
-        maintenanceEndDate: this.editEndDate,
+        maintenanceEndDate: this.editEndDate || undefined,
+        maintenanceFrequency: this.editFrequency || undefined,
       }));
       this.closeEditModal();
       this.loadDevice(d._id || d.id);

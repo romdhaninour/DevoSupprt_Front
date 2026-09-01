@@ -275,6 +275,40 @@ export class DeviceMaintenanceComponent implements OnInit {
     this.editError.set(null);
   }
 
+  onFrequencyChange(frequency: string) {
+    const device = this.editingDevice();
+    if (!frequency || !device) return;
+    const baseString = device.maintenanceStartDate || device.nextMaintenanceDate || device.maintenanceEndDate;
+    if (!baseString) return;
+    const baseDate = new Date(baseString);
+    const months = this.getFreqMonths(frequency);
+    if (months < 1) return;
+    baseDate.setMonth(baseDate.getMonth() + months);
+    const formatted = this.toDateString(baseDate);
+    this.editModel.update(m => ({ ...m, frequency, endDate: formatted }));
+    if (this.editEndFlatpickr) {
+      this.editEndFlatpickr.setDate(formatted, true);
+    }
+  }
+
+  private getFreqMonths(freq: string): number {
+    switch (freq) {
+      case '1month': return 1;
+      case '3months': return 3;
+      case '6months': return 6;
+      case '9months': return 9;
+      case '1year': return 12;
+      default: return 0;
+    }
+  }
+
+  private toDateString(date: Date): string {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }
+
   async saveEdit() {
     const device = this.editingDevice();
     if (!device) return;
