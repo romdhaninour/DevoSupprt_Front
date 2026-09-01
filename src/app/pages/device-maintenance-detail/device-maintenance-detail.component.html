@@ -52,12 +52,12 @@
             </svg>
             Modifier
           </button>
-          <button (click)="markAsMaintained()" [disabled]="maintainLoading()"
-            class="inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-semibold text-emerald-700 hover:bg-emerald-100 transition-colors disabled:opacity-50 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-300">
+          <button (click)="openConfirmModal()"
+            class="inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-semibold text-emerald-700 hover:bg-emerald-100 transition-colors dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-300">
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
               <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
             </svg>
-            {{ maintainLoading() ? 'En cours...' : 'Effectué' }}
+            Effectué
           </button>
         </div>
       </div>
@@ -169,6 +169,51 @@
       <button type="button" (click)="saveEdit()" [disabled]="editLoading()"
         class="px-4 py-2 rounded-xl bg-blue-600 text-sm font-semibold text-white hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
         {{ editLoading() ? 'Enregistrement...' : 'Enregistrer' }}
+      </button>
+    </div>
+  </div>
+</app-modal>
+
+<!-- Confirm Mark As Maintained Modal -->
+<app-modal [isOpen]="showConfirmModal()" (close)="closeConfirmModal()" className="max-w-md mx-4">
+  <div class="p-6">
+    <div class="flex items-center justify-center w-12 h-12 mx-auto mb-4 rounded-full bg-green-100 dark:bg-green-900/30">
+      <svg class="w-6 h-6 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+      </svg>
+    </div>
+    <h3 class="text-lg font-semibold text-gray-900 dark:text-white text-center mb-2">Marquer comme effectué</h3>
+    <p *ngIf="device() as d" class="text-sm text-gray-500 dark:text-gray-400 text-center mb-1">
+      Appareil : <span class="font-medium text-gray-700 dark:text-gray-300">{{ d.name }}</span>
+    </p>
+    <p *ngIf="device() as d" class="text-sm text-gray-500 dark:text-gray-400 text-center mb-4">
+      N° série : <span class="font-medium text-gray-700 dark:text-gray-300">{{ d.serialNumber }}</span>
+    </p>
+    <div class="mb-4">
+      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Date de réalisation</label>
+      <div class="relative">
+        <div class="absolute inset-y-0 start-0 flex items-center ps-3 pointer-events-none">
+          <svg class="w-4 h-4 text-gray-500 dark:text-gray-400" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 10h16m-8-3V4M7 7V4m10 3V4M5 20h14a1 1 0 0 0 1-1V7a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1Zm3-7h.01v.01H8V13Zm4 0h.01v.01H12V13Zm4 0h.01v.01H16V13Zm-8 4h.01v.01H8V17Zm4 0h.01v.01H12V17Zm4 0h.01v.01H16V17Z"/></svg>
+        </div>
+        <input id="detailConfirmDateInput" type="text" [value]="confirmDate()"
+          class="block w-full ps-9 pe-3 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white text-sm rounded-xl focus:ring-blue-500 focus:border-blue-500 shadow-sm placeholder:text-gray-400"
+          placeholder="Sélectionner une date" />
+      </div>
+    </div>
+    <div class="rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 p-4 mb-6">
+      <p class="text-sm text-amber-700 dark:text-amber-300">
+        La maintenance sera enregistrée à cette date. Les prochaines dates seront automatiquement recalculées selon la fréquence
+        <span *ngIf="device()?.maintenanceFrequency" class="font-semibold">({{ getFrequencyLabel(device()?.maintenanceFrequency) }})</span>.
+      </p>
+    </div>
+    <div class="flex justify-end gap-2">
+      <button type="button" (click)="closeConfirmModal()"
+        class="px-4 py-2 rounded-xl border border-gray-200 bg-white text-sm font-semibold text-gray-700 hover:bg-gray-100 transition-colors dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700">
+        Annuler
+      </button>
+      <button type="button" (click)="markAsMaintained()" [disabled]="confirmLoading()"
+        class="px-4 py-2 rounded-xl bg-green-600 text-sm font-semibold text-white hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+        {{ confirmLoading() ? 'Enregistrement...' : 'Confirmer' }}
       </button>
     </div>
   </div>

@@ -31,7 +31,6 @@ export class DeviceMaintenanceDetailComponent implements OnInit {
   device = signal<any>(null);
   loading = signal(true);
   error = signal<string | null>(null);
-  maintainLoading = signal(false);
 
   showEditModal = signal(false);
   editDescription = '';
@@ -41,6 +40,11 @@ export class DeviceMaintenanceDetailComponent implements OnInit {
   editError = signal<string | null>(null);
 
   private editEndFlatpickr: flatpickr.Instance | null = null;
+
+  showConfirmModal = signal(false);
+  confirmLoading = signal(false);
+  confirmDate = signal('');
+  private confirmFlatpickr: flatpickr.Instance | null = null;
 
   ngOnInit() {
     const id = this.route.snapshot.paramMap.get('id');
@@ -70,15 +74,50 @@ export class DeviceMaintenanceDetailComponent implements OnInit {
   async markAsMaintained() {
     const d = this.device();
     if (!d) return;
-    this.maintainLoading.set(true);
+    this.confirmLoading.set(true);
     try {
-      await firstValueFrom(this.apiService.markDeviceAsMaintained(d._id || d.id));
+      await firstValueFrom(this.apiService.markDeviceAsMaintained(d._id || d.id, this.confirmDate() || undefined));
+      this.closeConfirmModal();
       this.loadDevice(d._id || d.id);
     } catch (err: any) {
       this.error.set(err?.message || 'Impossible de marquer comme effectué.');
+      this.closeConfirmModal();
     } finally {
-      this.maintainLoading.set(false);
+      this.confirmLoading.set(false);
     }
+  }
+
+  openConfirmModal() {
+    this.confirmDate.set(this.toDateString(new Date()));
+    this.showConfirmModal.set(true);
+
+    setTimeout(() => {
+      const input = document.querySelector('#detailConfirmDateInput') as HTMLInputElement;
+      if (input) {
+        if (this.confirmFlatpickr) this.confirmFlatpickr.destroy();
+        this.confirmFlatpickr = flatpickr(input, {
+          locale: French, dateFormat: 'Y-m-d', altInput: false, allowInput: false,
+          clickOpens: true, disableMobile: true, appendTo: document.body,
+          defaultDate: this.confirmDate() || undefined,
+          onChange: (selectedDates) => {
+            if (selectedDates.length > 0) this.confirmDate.set(this.toDateString(selectedDates[0]));
+          },
+        });
+      }
+    }, 150);
+  }
+
+  closeConfirmModal() {
+    if (this.confirmFlatpickr) { this.confirmFlatpickr.destroy(); this.confirmFlatpickr = null; }
+    this.showConfirmModal.set(false);
+    this.confirmLoading.set(false);
+  }
+
+  private toDateString(date: Date): string {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
   }
 
   openEditModal() {
@@ -137,13 +176,6 @@ export class DeviceMaintenanceDetailComponent implements OnInit {
       case '1year': return 12;
       default: return 0;
     }
-  }
-
-  private toDateString(date: Date): string {
-    const y = date.getFullYear();
-    const m = String(date.getMonth() + 1).padStart(2, '0');
-    const d = String(date.getDate()).padStart(2, '0');
-    return `${y}-${m}-${d}`;
   }
 
   async saveEdit() {
