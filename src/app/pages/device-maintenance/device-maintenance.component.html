@@ -324,7 +324,7 @@
       </div>
       <div>
         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Fréquence</label>
-        <select [formField]="editForm.frequency"
+        <select [formField]="editForm.frequency" (change)="onFrequencyChange($any($event.target).value)"
           class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white">
           <option value="">Non défini</option>
           <option value="1month">1 mois</option>
