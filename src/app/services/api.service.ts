@@ -316,8 +316,8 @@ export class ApiService {
     return this.http.patch<any>(`${this.apiUrl}/devices/${id}/maintenance`, data, this.getAuthHeaders());
   }
 
-  markDeviceAsMaintained(id: string): Observable<any> {
-    return this.http.patch<any>(`${this.apiUrl}/devices/${id}/mark-maintained`, {}, this.getAuthHeaders());
+  markDeviceAsMaintained(id: string, performedDate?: string): Observable<any> {
+    return this.http.patch<any>(`${this.apiUrl}/devices/${id}/mark-maintained`, performedDate ? { performedDate } : {}, this.getAuthHeaders());
   }
 
   getDeviceById(id: string): Observable<any> {

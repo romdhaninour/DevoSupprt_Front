@@ -62,6 +62,8 @@ export class DeviceMaintenanceComponent implements OnInit {
   showConfirmModal = signal(false);
   confirmingDevice = signal<MaintenanceDevice | null>(null);
   confirmLoading = signal(false);
+  confirmDate = signal('');
+  private confirmFlatpickr: flatpickr.Instance | null = null;
 
   currentPage = 1;
   itemsPerPage = 6;
@@ -333,11 +335,28 @@ export class DeviceMaintenanceComponent implements OnInit {
 
   openConfirmModal(device: MaintenanceDevice) {
     this.confirmingDevice.set(device);
+    this.confirmDate.set(this.toDateString(new Date()));
     this.showConfirmModal.set(true);
     this.openActionMenuId.set(null);
+
+    setTimeout(() => {
+      const input = document.querySelector('#confirmDateInput') as HTMLInputElement;
+      if (input) {
+        if (this.confirmFlatpickr) this.confirmFlatpickr.destroy();
+        this.confirmFlatpickr = flatpickr(input, {
+          locale: French, dateFormat: 'Y-m-d', altInput: false, allowInput: false,
+          clickOpens: true, disableMobile: true, appendTo: document.body,
+          defaultDate: this.confirmDate() || undefined,
+          onChange: (selectedDates) => {
+            if (selectedDates.length > 0) this.confirmDate.set(this.toDateString(selectedDates[0]));
+          },
+        });
+      }
+    }, 150);
   }
 
   closeConfirmModal() {
+    if (this.confirmFlatpickr) { this.confirmFlatpickr.destroy(); this.confirmFlatpickr = null; }
     this.showConfirmModal.set(false);
     this.confirmingDevice.set(null);
     this.confirmLoading.set(false);
@@ -348,7 +367,7 @@ export class DeviceMaintenanceComponent implements OnInit {
     if (!device) return;
     this.confirmLoading.set(true);
     try {
-      await firstValueFrom(this.apiService.markDeviceAsMaintained(device.id));
+      await firstValueFrom(this.apiService.markDeviceAsMaintained(device.id, this.confirmDate() || undefined));
       this.closeConfirmModal();
       this.loadMaintenanceDevices();
     } catch (err: any) {
